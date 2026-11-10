@@ -1,0 +1,21 @@
+{
+  "id": "/kisti/",
+  "name": "Kisti",
+  "short_name": "Kisti",
+  "description": "Kisti — آموزش خط‌های باستانی ایران به فارسی: میخی هخامنشی، پهلوی و دین‌دبیره.",
+  "lang": "fa",
+  "dir": "rtl",
+  "start_url": "/kisti/?source=pwa",
+  "scope": "/kisti/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#5E3A22",
+  "theme_color": "#5E3A22",
+  "icons": [
+    {"src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"},
+    {"src": "icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png"}
+  ]
+}

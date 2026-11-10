@@ -1,0 +1,107 @@
+/* Kisti — sample content: Old Persian cuneiform, Lesson 1.
+   Spellings follow the standard editions (Kent 1953; Schmitt 2009). Unicode block U+103A0–U+103DF. */
+window.KISTI = {
+  signs: [
+    { id: 'a',  g: '\u{103A0}', tr: 'a / ā', fa: 'اَ / آ', audio: 'audio/s-a.mp3',
+      shape: 'یک میخ افقی در بالا و سه میخ ایستاده در زیر آن.',
+      text: 'نخستین نشانهٔ این خط. آوای «اَ» را می‌دهد. وقتی پشتِ یک نشانهٔ هم‌خوان بیاید، آن را کشیده می‌کند و «آ» می‌شود؛ مثلاً 𐎱 (پَ) + 𐎠 = «پا».' },
+    { id: 'i',  g: '\u{103A1}', tr: 'i / ī', fa: 'اِ / ای', audio: 'audio/s-i.mp3',
+      shape: 'دو میخ افقی کنار هم در بالا و دو میخ ایستاده در زیر آن.',
+      text: 'آوای «ای» (یا «اِ» کوتاه). هم در آغاز واژه می‌آید و هم پس از هم‌خوان؛ مثلاً در imam یعنی «این را».' },
+    { id: 'u',  g: '\u{103A2}', tr: 'u / ū', fa: 'اُ / او', audio: 'audio/s-u.mp3',
+      shape: 'یک «گوشه‌میخ» (مثل یک زاویه) در چپ، و یک میخ افقی با دو میخ ایستاده در راستِ آن.',
+      text: 'آوای «او» (یا «اُ» کوتاه). در نام داریوش، Dārayavauš، همین نشانه پیش از «ش» پایانی می‌آید.' },
+    { id: 'da', g: '\u{103AD}', tr: 'da', fa: 'دَ', audio: 'audio/s-da.mp3',
+      shape: 'یک میخ افقی در بالا و دو میخ ایستاده در زیر آن. با 𐎠 اشتباه نگیر: 𐎠 سه میخ ایستاده دارد، 𐎭 دو تا.',
+      text: 'هم‌خوان «د» همراه با یک «اَ»ی پنهان: «دَ». اگر واکه‌ای پس از آن خوانده نشود، فقط «د» است. نخستین نشانهٔ نام داریوش.' },
+    { id: 'ma', g: '\u{103B6}', tr: 'ma', fa: 'مَ', audio: 'audio/s-ma.mp3',
+      shape: 'یک میخ افقی کوچک در چپ و سه میخ ایستاده (میخ میانی کوتاه‌تر).',
+      text: 'هجای «مَ». در پایان واژهٔ adam (من) همین نشانه نوشته می‌شود اما فقط «م» خوانده می‌شود؛ چون خط میخی هم‌خوانِ تنها ندارد.' },
+    { id: 'pa', g: '\u{103B1}', tr: 'pa', fa: 'پَ', audio: 'audio/s-pa.mp3',
+      shape: 'سه میخ افقی روی هم و دو میخ ایستادهٔ کوچک در پایین.',
+      text: 'هجای «پَ». نخستین نشانهٔ واژهٔ Pārsa، یعنی «پارس».' },
+    { id: 'ra', g: '\u{103BC}', tr: 'ra', fa: 'رَ', audio: 'audio/s-ra.mp3',
+      shape: 'سه میخ افقی روی هم و یک میخ ایستادهٔ بلند در راستِ آن‌ها.',
+      text: 'هجای «رَ». در Pārsa و Dārayavauš می‌آید.' },
+    { id: 'sa', g: '\u{103BF}', tr: 'sa', fa: 'سَ', audio: 'audio/s-sa.mp3',
+      shape: 'یک میخ ایستادهٔ بلند در چپ و سه میخ افقی در راستِ آن؛ وارونهٔ 𐎼.',
+      text: 'هجای «سَ». آخرین نشانهٔ Pārsa؛ در pasā (پس) هم می‌آید.' }
+  ],
+  words: [
+    { id: 'adam', signs: ['a', 'da', 'ma'], tr: 'adam', fa: 'من', say: 'اَدَم', audio: 'audio/w-adam.mp3',
+      note: '«𐎶» در پایان، فقط «م» خوانده می‌شود: a-d(a)-m(a).',
+      today: 'در فارسی امروز «من» داریم که از شکل دیگرِ همین ضمیر، manā (از من / مالِ من)، آمده است.' },
+    { id: 'parsa', signs: ['pa', 'a', 'ra', 'sa'], tr: 'Pārsa', fa: 'پارس (سرزمین و مردم پارس)', say: 'پارسَ', audio: 'audio/w-parsa.mp3',
+      note: '𐎱 + 𐎠 = «پا» (آ کشیده). بعد «ر» و «سَ».',
+      today: 'پارس و فارس؛ نام «پارسی» و «فارسی» هم از همین واژه است.' },
+    { id: 'pasa', signs: ['pa', 'sa', 'a'], tr: 'pasā', fa: 'پس، پس از', say: 'پَسا', audio: 'audio/w-pasa.mp3',
+      note: '𐎿 + 𐎠 = «سا». در کتیبه‌ها مثلاً pasā manā یعنی «پس از من».',
+      today: '«پس» در فارسی امروز.' },
+    { id: 'imam', signs: ['i', 'ma', 'ma'], tr: 'imam', fa: 'این (را)', say: 'ایمَم', audio: 'audio/w-imam.mp3',
+      note: 'دو بار 𐎶: «ایمَ» + «م». در کتیبهٔ کاخ تچر: imam tacaram «این کاخ را».',
+      today: 'ضمیر اشاره‌ای که در کتیبه‌ها بسیار تکرار می‌شود.' }
+  ],
+  /* inscription words: cuneiform, transliteration, Persian gloss, modern descendant */
+  lex: {
+    adam:          { g: '𐎠𐎭𐎶', tr: 'adam', fa: 'من', audio: 'audio/w-adam.mp3' },
+    darayavaush:   { g: '𐎭𐎠𐎼𐎹𐎺𐎢𐏁', tr: 'Dārayavauš', fa: 'داریوش', today: 'داریوش؛ به معنی «نگه‌دارندهٔ نیکی»', audio: 'audio/w-darayavaush.mp3' },
+    xshayathiya:   { g: '𐎧𐏁𐎠𐎹𐎰𐎡𐎹', tr: 'xšāyaθiya', fa: 'شاه', today: 'شاه (در پهلوی: šāh)', audio: 'audio/w-xshayathiya.mp3' },
+    vazraka:       { g: '𐎺𐏀𐎼𐎣', tr: 'vazraka', fa: 'بزرگ', today: 'بزرگ (در پهلوی: wuzurg)', audio: 'audio/w-vazraka.mp3' },
+    xshayathiyanam:{ g: '𐎧𐏁𐎠𐎹𐎰𐎡𐎹𐎠𐎴𐎠𐎶', tr: 'xšāyaθiyānām', fa: 'شاهانِ', today: 'پسوند ‎-ānām‎ مانند «ـانِ» امروزی است: شاهِ شاهان', audio: 'audio/w-xshayathiyanam.mp3' },
+    parsaiy:       { g: '𐎱𐎠𐎼𐎿𐎡𐎹', tr: 'Pārsaiy', fa: 'در پارس', today: 'پسوند ‎-aiy‎ یعنی «در»', audio: 'audio/w-parsaiy.mp3' },
+    dahyunam:      { g: '𐎭𐏃𐎹𐎢𐎴𐎠𐎶', tr: 'dahyūnām', fa: 'سرزمین‌هایِ', today: 'dahyu (سرزمین) ← «ده» در فارسی امروز', audio: 'audio/w-dahyunam.mp3' },
+    vishtaspahya:  { g: '𐎻𐎡𐏁𐎫𐎠𐎿𐎱𐏃𐎹𐎠', tr: 'Vištāspahyā', fa: 'ویشتاسپِ (پدرِ داریوش)', today: 'گشتاسپ / ویشتاسپ', audio: 'audio/w-vishtaspahya.mp3' },
+    pusa:          { g: '𐎱𐎢𐏂', tr: 'puça', fa: 'پسر', today: 'پور، پسر', audio: 'audio/w-pusa.mp3' },
+    arshamahya:    { g: '𐎠𐎼𐏁𐎠𐎶𐏃𐎹𐎠', tr: 'Aršāmahyā', fa: 'ارشامِ (پدربزرگ داریوش)', today: 'ارشام', audio: 'audio/w-arshamahya.mp3' },
+    napa:          { g: '𐎴𐎱𐎠', tr: 'napā', fa: 'نوه', today: 'نوه، نبیره', audio: 'audio/w-napa.mp3' },
+    haxamanishiya: { g: '𐏃𐎧𐎠𐎶𐎴𐎡𐏁𐎡𐎹', tr: 'Haxāmanišiya', fa: 'هخامنشی', today: 'هخامنشی، از خاندان هخامنش', audio: 'audio/w-haxamanishiya.mp3' }
+  },
+  sentence: {
+    words: ['adam', 'darayavaush', 'xshayathiya', 'vazraka'],
+    fa: 'من داریوش، شاه بزرگ (هستم).',
+    grammar: [
+      'در این جمله فعل «هستم» نیامده است. در پارسی باستان، مثل بسیاری از زبان‌های کهن، فعل «بودن» را می‌شد نیاورد.',
+      'صفت پس از اسم می‌آید: xšāyaθiya vazraka یعنی «شاهِ بزرگ»؛ درست مانند فارسی امروز.',
+      'میان واژه‌ها نشانهٔ جداکنندهٔ 𐏐 (یک میخ کج) نوشته می‌شود؛ این خط فاصله ندارد.'
+    ]
+  },
+  inscription: {
+    title: 'کتیبهٔ بیستون، بند ۱',
+    ref: 'DB I 1–3 · ستون یکم، سطرهای ۱ تا ۳',
+    about: 'داریوش بزرگ حدود ۵۲۰ پیش از میلاد این کتیبه را در دل کوه بیستون، نزدیک کرمانشاه، به سه زبان پارسی باستان، ایلامی و بابلی کَند. بند نخست، داریوش را با نام و تبارش معرفی می‌کند. هر سطر زیر یک «بخش معنایی» است، نه سطرِ اصلی روی سنگ.',
+    lines: [
+      { w: ['adam', 'darayavaush', 'xshayathiya', 'vazraka'], fa: 'من داریوشم، شاه بزرگ،', audio: 'audio/l-1.mp3' },
+      { w: ['xshayathiya', 'xshayathiyanam'], fa: 'شاه شاهان،', audio: 'audio/l-2.mp3' },
+      { w: ['xshayathiya', 'parsaiy'], fa: 'شاه در پارس،', audio: 'audio/l-3.mp3' },
+      { w: ['xshayathiya', 'dahyunam'], fa: 'شاه سرزمین‌ها،', audio: 'audio/l-4.mp3' },
+      { w: ['vishtaspahya', 'pusa'], fa: 'پسر ویشتاسپ،', audio: 'audio/l-5.mp3' },
+      { w: ['arshamahya', 'napa'], fa: 'نوهٔ ارشام،', audio: 'audio/l-6.mp3' },
+      { w: ['haxamanishiya'], fa: 'هخامنشی.', audio: 'audio/l-7.mp3' }
+    ]
+  },
+  scripts: [
+    { id: 'cuneiform', name: 'خط میخی هخامنشی', latin: 'Old Persian Cuneiform', sample: '𐎠𐎭𐎶', img: 'images/darius-behistun.webp', active: true,
+      blurb: 'خط کتیبه‌های داریوش و خشایارشا؛ حدود ۵۲۰ تا ۳۳۰ پیش از میلاد.' },
+    { id: 'pahlavi', name: 'خط پهلوی', latin: 'Pahlavi', sample: '', img: 'images/shapur-relief.webp', active: false,
+      blurb: 'خط کتیبه‌های ساسانی و کتاب‌های پهلوی؛ از نقش رستم تا طاق کسری.' },
+    { id: 'avestan', name: 'دین‌دبیره (اوستایی)', latin: 'Avestan', sample: '', img: 'images/zoroaster.webp', active: false,
+      blurb: 'خطی که موبدان ساسانی برای نوشتن اوستا و گاهان زرتشت ساختند.' }
+  ],
+  stages: [
+    { id: 'alphabet', n: 1, name: 'الفبا', desc: '۸ نشانهٔ نخست، با صدا و آزمونک', icon: '𐎠' },
+    { id: 'words', n: 2, name: 'واژه‌سازی', desc: 'adam، Pārsa، pasā و imam', icon: '𐎱𐎠' },
+    { id: 'sentence', n: 3, name: 'جمله‌سازی', desc: '«من داریوش، شاه بزرگ»', icon: '𐏐' },
+    { id: 'inscription', n: 4, name: 'کتیبه‌خوانی', desc: 'بیستون، بند ۱', icon: '𐏋' }
+  ],
+  gallery: [
+    { img: 'images/persepolis-gate.webp', name: 'دروازهٔ ملل، تخت جمشید', era: 'هخامنشی · خشایارشا' },
+    { img: 'images/apadana.webp', name: 'پلکان آپادانا، تخت جمشید', era: 'هخامنشی · داریوش و خشایارشا' },
+    { img: 'images/pasargadae.webp', name: 'آرامگاه کوروش بزرگ، پاسارگاد', era: 'هخامنشی · کوروش' },
+    { img: 'images/behistun.webp', name: 'کتیبه و نگارهٔ بیستون', era: 'هخامنشی · داریوش بزرگ' },
+    { img: 'images/naqsh-rostam.webp', name: 'آرامگاه داریوش و نگارهٔ شاپور، نقش رستم', era: 'هخامنشی و ساسانی' },
+    { img: 'images/shapur-coin.webp', name: 'سکهٔ شاپور یکم', era: 'ساسانی' },
+    { img: 'images/ardashir-palace.webp', name: 'کاخ اردشیر بابکان، فیروزآباد', era: 'ساسانی · اردشیر یکم' },
+    { img: 'images/taq-kasra.webp', name: 'طاق کسری، تیسفون', era: 'ساسانی' },
+    { img: 'images/takht-soleyman.webp', name: 'تخت سلیمان (آذرگشنسپ)', era: 'ساسانی' }
+  ]
+};

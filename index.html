@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" translate="no">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#5E3A22" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="application-name" content="Kisti" />
+    <meta name="apple-mobile-web-app-title" content="Kisti" />
+    <meta name="description" content="Kisti — آموزش خط‌های باستانی ایران به فارسی: میخی هخامنشی، پهلوی و دین‌دبیره." />
+    <title>Kisti</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
+    <link rel="icon" href="icons/favicon-64.png" type="image/png" />
+    <link rel="preload" href="fonts/NotoSansOldPersian-Regular.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" href="fonts/Vazirmatn-Bold.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="css/styles.css?v=1" />
+    <script src="js/install.js?v=1"></script>
+  </head>
+  <body>
+    <div id="splash" class="splash" aria-hidden="false">
+      <img class="splash-logo" src="icons/icon-512.png" width="132" height="132" alt="" />
+      <h1 class="splash-name" dir="ltr" lang="en">Kisti</h1>
+      <p class="splash-sub">کیستی · خط‌های باستانی ایران</p>
+      <button class="btn btn-gold splash-install" data-install>📲 نصب اپ</button>
+      <p class="splash-by" dir="ltr" lang="en">Created by Daniel Mozafari</p>
+    </div>
+    <div id="app" class="shell"></div>
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+    <noscript><p class="noscript">برای Kisti باید جاوااسکریپت روشن باشد.</p></noscript>
+    <script>window.KISTI_VERSION = "1";</script>
+    <script src="js/data.js?v=1"></script>
+    <script src="js/app.js?v=1"></script>
+  </body>
+</html>
