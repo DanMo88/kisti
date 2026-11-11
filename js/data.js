@@ -2,28 +2,28 @@
    Spellings follow the standard editions (Kent 1953; Schmitt 2009). Unicode block U+103A0–U+103DF. */
 window.KISTI = {
   signs: [
-    { id: 'a',  g: '\u{103A0}', tr: 'a / ā', fa: 'اَ / آ', audio: 'audio/s-a.mp3',
+    { id: 'a', lesson: 1, hint: 'یک سقف روی سه ستون، مثل ایوانِ تخت جمشید. سه ستون = «آ»، بزرگ‌ترین و نخستین نشانه.',  g: '\u{103A0}', tr: 'a / ā', fa: 'اَ / آ', audio: 'audio/s-a.mp3',
       shape: 'یک میخ افقی در بالا و سه میخ ایستاده در زیر آن.',
       text: 'نخستین نشانهٔ این خط. آوای «اَ» را می‌دهد. وقتی پشتِ یک نشانهٔ هم‌خوان بیاید، آن را کشیده می‌کند و «آ» می‌شود؛ مثلاً 𐎱 (پَ) + 𐎠 = «پا».' },
-    { id: 'i',  g: '\u{103A1}', tr: 'i / ī', fa: 'اِ / ای', audio: 'audio/s-i.mp3',
+    { id: 'i', lesson: 1, hint: 'دو میخ افقی کنار هم مثل دو ابروی بالا رفته که می‌گویند «ایی!»، روی دو ستون.',  g: '\u{103A1}', tr: 'i / ī', fa: 'اِ / ای', audio: 'audio/s-i.mp3',
       shape: 'دو میخ افقی کنار هم در بالا و دو میخ ایستاده در زیر آن.',
       text: 'آوای «ای» (یا «اِ» کوتاه). هم در آغاز واژه می‌آید و هم پس از هم‌خوان؛ مثلاً در imam یعنی «این را».' },
-    { id: 'u',  g: '\u{103A2}', tr: 'u / ū', fa: 'اُ / او', audio: 'audio/s-u.mp3',
+    { id: 'u', lesson: 1, hint: 'گوشه‌میخ مثل دهانی باز است که می‌گوید «او». بعد یک سقف کوچک روی دو ستون.',  g: '\u{103A2}', tr: 'u / ū', fa: 'اُ / او', audio: 'audio/s-u.mp3',
       shape: 'یک «گوشه‌میخ» (مثل یک زاویه) در چپ، و یک میخ افقی با دو میخ ایستاده در راستِ آن.',
       text: 'آوای «او» (یا «اُ» کوتاه). در نام داریوش، Dārayavauš، همین نشانه پیش از «ش» پایانی می‌آید.' },
-    { id: 'da', g: '\u{103AD}', tr: 'da', fa: 'دَ', audio: 'audio/s-da.mp3',
+    { id: 'da', lesson: 1, hint: 'مثل 𐎠 است اما با «دو» ستون. «دو» با «د» شروع می‌شود: دو ستون = «دَ».', g: '\u{103AD}', tr: 'da', fa: 'دَ', audio: 'audio/s-da.mp3',
       shape: 'یک میخ افقی در بالا و دو میخ ایستاده در زیر آن. با 𐎠 اشتباه نگیر: 𐎠 سه میخ ایستاده دارد، 𐎭 دو تا.',
       text: 'هم‌خوان «د» همراه با یک «اَ»ی پنهان: «دَ». اگر واکه‌ای پس از آن خوانده نشود، فقط «د» است. نخستین نشانهٔ نام داریوش.' },
-    { id: 'ma', g: '\u{103B6}', tr: 'ma', fa: 'مَ', audio: 'audio/s-ma.mp3',
+    { id: 'ma', lesson: 1, hint: 'یک میخ کوچک افقی از چپ به سه ستون «اشاره» می‌کند؛ ستون وسط کوتاه است. «مَ» مثل «مادر».', g: '\u{103B6}', tr: 'ma', fa: 'مَ', audio: 'audio/s-ma.mp3',
       shape: 'یک میخ افقی کوچک در چپ و سه میخ ایستاده (میخ میانی کوتاه‌تر).',
       text: 'هجای «مَ». در پایان واژهٔ adam (من) همین نشانه نوشته می‌شود اما فقط «م» خوانده می‌شود؛ چون خط میخی هم‌خوانِ تنها ندارد.' },
-    { id: 'pa', g: '\u{103B1}', tr: 'pa', fa: 'پَ', audio: 'audio/s-pa.mp3',
+    { id: 'pa', lesson: 2, hint: 'سه میخ افقی روی هم و دو پایهٔ کوچک.', g: '\u{103B1}', tr: 'pa', fa: 'پَ', audio: 'audio/s-pa.mp3',
       shape: 'سه میخ افقی روی هم و دو میخ ایستادهٔ کوچک در پایین.',
       text: 'هجای «پَ». نخستین نشانهٔ واژهٔ Pārsa، یعنی «پارس».' },
-    { id: 'ra', g: '\u{103BC}', tr: 'ra', fa: 'رَ', audio: 'audio/s-ra.mp3',
+    { id: 'ra', lesson: 2, hint: 'سه میخ افقی و یک ستون بلند در راست.', g: '\u{103BC}', tr: 'ra', fa: 'رَ', audio: 'audio/s-ra.mp3',
       shape: 'سه میخ افقی روی هم و یک میخ ایستادهٔ بلند در راستِ آن‌ها.',
       text: 'هجای «رَ». در Pārsa و Dārayavauš می‌آید.' },
-    { id: 'sa', g: '\u{103BF}', tr: 'sa', fa: 'سَ', audio: 'audio/s-sa.mp3',
+    { id: 'sa', lesson: 2, hint: 'یک ستون بلند در چپ و سه میخ افقی؛ وارونهٔ 𐎼.', g: '\u{103BF}', tr: 'sa', fa: 'سَ', audio: 'audio/s-sa.mp3',
       shape: 'یک میخ ایستادهٔ بلند در چپ و سه میخ افقی در راستِ آن؛ وارونهٔ 𐎼.',
       text: 'هجای «سَ». آخرین نشانهٔ Pārsa؛ در pasā (پس) هم می‌آید.' }
   ],
@@ -79,29 +79,45 @@ window.KISTI = {
       { w: ['haxamanishiya'], fa: 'هخامنشی.', audio: 'audio/l-7.mp3' }
     ]
   },
+  strokes: {"a": [{"t": "h", "x": 0.16, "y": 0.217, "len": 0.681, "w": 0.188}, {"t": "v", "x": 0.278, "y": 0.333, "len": 0.544, "w": 0.188}, {"t": "v", "x": 0.5, "y": 0.333, "len": 0.544, "w": 0.188}, {"t": "v", "x": 0.726, "y": 0.333, "len": 0.544, "w": 0.188}], "i": [{"t": "h", "x": 0.175, "y": 0.217, "len": 0.322, "w": 0.188}, {"t": "h", "x": 0.497, "y": 0.217, "len": 0.328, "w": 0.188}, {"t": "v", "x": 0.346, "y": 0.333, "len": 0.544, "w": 0.188}, {"t": "v", "x": 0.639, "y": 0.333, "len": 0.544, "w": 0.188}], "u": [{"t": "w", "x": 0.109, "y": 0.502, "len": 0.403, "w": 0.763}, {"t": "h", "x": 0.543, "y": 0.21, "len": 0.335, "w": 0.188}, {"t": "v", "x": 0.583, "y": 0.327, "len": 0.545, "w": 0.188}, {"t": "v", "x": 0.798, "y": 0.327, "len": 0.545, "w": 0.187}], "da": [{"t": "h", "x": 0.268, "y": 0.217, "len": 0.463, "w": 0.188}, {"t": "v", "x": 0.392, "y": 0.333, "len": 0.544, "w": 0.188}, {"t": "v", "x": 0.607, "y": 0.333, "len": 0.544, "w": 0.188}], "ma": [{"t": "h", "x": 0.104, "y": 0.512, "len": 0.274, "w": 0.188}, {"t": "v", "x": 0.444, "y": 0.131, "len": 0.737, "w": 0.188}, {"t": "v", "x": 0.627, "y": 0.319, "len": 0.545, "w": 0.187}, {"t": "v", "x": 0.802, "y": 0.131, "len": 0.737, "w": 0.188}]},
+  lessons: [
+    { n: 1, signs: ['a', 'i', 'u', 'da', 'ma'], title: 'نخستین نشانه‌ها', active: true },
+    { n: 2, title: 'هم‌خوان‌های نخست' },
+    { n: 3, title: 'ر، س و ش' }, { n: 4, title: 'هجاهای «اِ» و «اُ»' }, { n: 5, title: 'گ، ج و چ' },
+    { n: 6, title: 'ن، و، ی' }, { n: 7, title: 'ز، ه، ث، ف' }, { n: 8, title: 'اندیشه‌نگارها و عددها' }
+  ],
+  parts: [
+    { id: 'learn', name: 'یادگیری', desc: 'شکل، صدا و راز به‌یادسپاری', ic: '👁' },
+    { id: 'mashq', name: 'مشق', desc: 'هر نشانه پنج بار با انگشت', ic: '✍' },
+    { id: 'quiz', name: 'آزمونک', desc: 'شکل ← صدا، صدا ← شکل، نوشتن از حافظه', ic: '?' },
+    { id: 'review', name: 'مرور', desc: 'مرور نشانه‌های پیشین', ic: '↺' }
+  ],
   scripts: [
-    { id: 'cuneiform', name: 'خط میخی هخامنشی', latin: 'Old Persian Cuneiform', sample: '𐎠𐎭𐎶', img: 'images/darius-behistun.webp', active: true,
+    { id: 'cuneiform', name: 'خط میخی هخامنشی', latin: 'Old Persian Cuneiform', sample: '𐎠𐎭𐎶', img: 'images/darius.webp', active: true,
       blurb: 'خط کتیبه‌های داریوش و خشایارشا؛ حدود ۵۲۰ تا ۳۳۰ پیش از میلاد.' },
-    { id: 'pahlavi', name: 'خط پهلوی', latin: 'Pahlavi', sample: '', img: 'images/shapur-relief.webp', active: false,
+    { id: 'pahlavi', name: 'خط پهلوی', latin: 'Pahlavi', img: 'images/shapur.webp', active: false,
       blurb: 'خط کتیبه‌های ساسانی و کتاب‌های پهلوی؛ از نقش رستم تا طاق کسری.' },
-    { id: 'avestan', name: 'دین‌دبیره (اوستایی)', latin: 'Avestan', sample: '', img: 'images/zoroaster.webp', active: false,
+    { id: 'avestan', name: 'دین‌دبیره (اوستایی)', latin: 'Avestan', img: 'images/zoroaster.webp', active: false,
       blurb: 'خطی که موبدان ساسانی برای نوشتن اوستا و گاهان زرتشت ساختند.' }
   ],
-  stages: [
-    { id: 'alphabet', n: 1, name: 'الفبا', desc: '۸ نشانهٔ نخست، با صدا و آزمونک', icon: '𐎠' },
-    { id: 'words', n: 2, name: 'واژه‌سازی', desc: 'adam، Pārsa، pasā و imam', icon: '𐎱𐎠' },
+  steps: [
+    { id: 'words', n: 2, name: 'واژه‌سازی', desc: 'adam، Pārsa، pasā و imam', icon: '𐎠𐎭𐎶' },
     { id: 'sentence', n: 3, name: 'جمله‌سازی', desc: '«من داریوش، شاه بزرگ»', icon: '𐏐' },
     { id: 'inscription', n: 4, name: 'کتیبه‌خوانی', desc: 'بیستون، بند ۱', icon: '𐏋' }
   ],
   gallery: [
-    { img: 'images/persepolis-gate.webp', name: 'دروازهٔ ملل، تخت جمشید', era: 'هخامنشی · خشایارشا' },
-    { img: 'images/apadana.webp', name: 'پلکان آپادانا، تخت جمشید', era: 'هخامنشی · داریوش و خشایارشا' },
-    { img: 'images/pasargadae.webp', name: 'آرامگاه کوروش بزرگ، پاسارگاد', era: 'هخامنشی · کوروش' },
-    { img: 'images/behistun.webp', name: 'کتیبه و نگارهٔ بیستون', era: 'هخامنشی · داریوش بزرگ' },
-    { img: 'images/naqsh-rostam.webp', name: 'آرامگاه داریوش و نگارهٔ شاپور، نقش رستم', era: 'هخامنشی و ساسانی' },
-    { img: 'images/shapur-coin.webp', name: 'سکهٔ شاپور یکم', era: 'ساسانی' },
-    { img: 'images/ardashir-palace.webp', name: 'کاخ اردشیر بابکان، فیروزآباد', era: 'ساسانی · اردشیر یکم' },
+    { img: 'images/cyrus.webp', name: 'کوروش بزرگ در باغ پاسارگاد', era: 'هخامنشی' },
+    { img: 'images/cyrus-tomb.webp', name: 'آرامگاه کوروش، پاسارگاد', era: 'هخامنشی' },
+    { img: 'images/darius.webp', name: 'داریوش بزرگ در بیستون', era: 'هخامنشی' },
+    { img: 'images/xerxes.webp', name: 'خشایارشا در آپادانا', era: 'هخامنشی' },
+    { img: 'images/persepolis.webp', name: 'دروازهٔ ملل، تخت جمشید', era: 'هخامنشی' },
+    { img: 'images/naqsh-rostam.webp', name: 'نقش رستم', era: 'هخامنشی و ساسانی' },
+    { img: 'images/ardashir.webp', name: 'اردشیر بابکان', era: 'ساسانی' },
+    { img: 'images/ardashir-palace.webp', name: 'کاخ اردشیر، فیروزآباد', era: 'ساسانی' },
+    { img: 'images/shapur.webp', name: 'شاپور یکم', era: 'ساسانی' },
+    { img: 'images/khosrow.webp', name: 'خسرو انوشیروان دادگر', era: 'ساسانی' },
     { img: 'images/taq-kasra.webp', name: 'طاق کسری، تیسفون', era: 'ساسانی' },
-    { img: 'images/takht-soleyman.webp', name: 'تخت سلیمان (آذرگشنسپ)', era: 'ساسانی' }
+    { img: 'images/takht-soleyman.webp', name: 'تخت سلیمان (آذرگشنسپ)', era: 'ساسانی' },
+    { img: 'images/zoroaster.webp', name: 'زرتشت', era: 'ایران کهن' }
   ]
 };

@@ -1,15 +1,15 @@
 // Kisti service worker · HTML/JSON network-first · css/js stale-while-revalidate · media cache-on-demand
-const V = 'kisti-v1';
-const SHELL = ['./', 'index.html', 'css/styles.css?v=1', 'js/app.js?v=1', 'js/data.js?v=1', 'js/install.js?v=1', 'manifest.webmanifest',
-  'fonts/Vazirmatn-Regular.woff2', 'fonts/Vazirmatn-Bold.woff2', 'fonts/Vazirmatn-Black.woff2', 'fonts/NotoSansOldPersian-Regular.woff2',
+const V = 'kisti-v2', MEDIA = 'kisti-media-v2';
+const SHELL = ['./', 'index.html', 'css/styles.css?v=2', 'js/app.js?v=2', 'js/data.js?v=2', 'js/install.js?v=2', 'manifest.webmanifest',
+  'fonts/Vazirmatn-Regular.woff2', 'fonts/Vazirmatn-Bold.woff2', 'fonts/Vazirmatn-Black.woff2', 'fonts/NotoSansOldPersian-Regular.woff2', 'fonts/Fredoka-Bold.woff2', 'fonts/Alegreya-Italic.woff2',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'images/shir-o-khorshid.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
-self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('kisti-') && k !== V && k !== 'kisti-media').map(k => caches.delete(k)))).then(() => self.clients.claim())); });
+self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('kisti-') && k !== V && k !== MEDIA).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', e => {
   const req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== location.origin) return;
   if (/\/(audio|images|fonts|icons)\//.test(url.pathname)) {
-    e.respondWith(caches.match(url.origin + url.pathname).then(hit => hit || fetch(req).then(r => { if (r.ok && r.status === 200) { const cp = r.clone(); caches.open('kisti-media').then(c => c.put(url.origin + url.pathname, cp)); } return r; })));
+    e.respondWith(caches.match(url.origin + url.pathname).then(hit => hit || fetch(req).then(r => { if (r.ok && r.status === 200) { const cp = r.clone(); caches.open(MEDIA).then(c => c.put(url.origin + url.pathname, cp)); } return r; })));
   } else if (req.mode === 'navigate' || url.pathname.endsWith('/') || url.pathname.endsWith('.html') || url.pathname.endsWith('.json')) {
     e.respondWith(fetch(req).then(r => { if (r.ok) { const cp = r.clone(); caches.open(V).then(c => c.put(req, cp)); } return r; })
       .catch(() => caches.match(req, { ignoreSearch: true }).then(r => r || caches.match('index.html'))));

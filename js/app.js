@@ -1,11 +1,13 @@
-/* Kisti — sample (Old Persian cuneiform, Lesson 1). Vanilla JS, hash routing, localStorage progress. */
+/* Kisti v2 — sample. Old Persian cuneiform: alphabet lesson 1 (learn · mashq · quiz · review) + words · sentence · inscription.
+   Vanilla JS, hash routing, localStorage progress (kisti-progress-v1, migrated in place). */
 (function () {
   'use strict';
   var K = window.KISTI, app = document.getElementById('app');
   var STORE = 'kisti-progress-v1';
   var SIG = {}; K.signs.forEach(function (s) { SIG[s.id] = s; });
+  var L1 = K.lessons[0].signs;
   var DIV = '\u{103D0}';
-  var FA_DIG = '۰۱۲۳۴۵۶۷۸۹';
+  var FA_DIG = '۰۱۲۳۴۵۶۷۸۹', LET = ['الف', 'ب', 'ج', 'د'];
   function fn(n) { return String(n).replace(/\d/g, function (d) { return FA_DIG[d]; }); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
@@ -13,18 +15,20 @@
   var OPRUN = /([\u{103A0}-\u{103DF}]+)/gu;
   function render(h) { app.innerHTML = h.replace(/>([^<]*)</g, function (m, txt) { return '>' + txt.replace(OPRUN, '<span class="cu">$1</span>') + '<'; }); }
 
-  /* ---------- progress ---------- */
+  /* ---------- progress (v1 → v2 migration keeps everything) ---------- */
   var P = load();
   function load() {
-    try { var p = JSON.parse(localStorage.getItem(STORE) || '{}'); } catch (e) { p = {}; }
+    var p; try { p = JSON.parse(localStorage.getItem(STORE) || '{}') || {}; } catch (e) { p = {}; }
     p.done = p.done || {}; p.seen = p.seen || []; p.words = p.words || {}; p.lines = p.lines || {};
+    p.L = p.L || {}; p.L[1] = p.L[1] || {}; p.nb = p.nb || {};
+    if (!p.v) { if (p.done.alphabet) p.L[1].learn = true; p.v = 2; }
     return p;
   }
   function save() { try { localStorage.setItem(STORE, JSON.stringify(P)); } catch (e) {} }
   function markDone(stage) { if (!P.done[stage]) { P.done[stage] = true; save(); } }
+  function partDone(part) { if (!P.L[1][part]) { P.L[1][part] = true; save(); } }
   if (navigator.storage && navigator.storage.persist) { try { navigator.storage.persist(); } catch (e) {} }
 
-  /* ---------- audio: preloaded, instant (Web Audio + HTMLAudio fallback) ---------- */
   var Audio_ = (function () {
     var urls = [], raw = {}, buf = {}, els = {}, ctx = null, cur = null;
     K.signs.forEach(function (s) { urls.push(s.audio); });
@@ -55,45 +59,137 @@
   })();
 
   function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('on'); }, 2200); }
-  function bar(title, step) {
-    return '<header class="bar"><button class="back" data-go="home" aria-label="بازگشت">→</button><h2>' + title + '</h2>' + (step ? '<span class="step">' + step + '</span>' : '') + '</header>';
+  var RULE = '<div class="rule"><i></i><i></i><i></i><i></i></div>';
+  function head(title, pill, sub, back) {
+    return '<header class="page-h">' + (back ? '<div class="backrow"><button class="back" data-go="' + back + '">→ بازگشت</button></div>' : '') +
+      '<div class="row"><h1>' + title + '</h1>' + (pill ? '<span class="pill">' + pill + '</span>' : '') + '</div>' + RULE + (sub ? '<p class="subt">' + sub + '</p>' : '') + '</header>';
   }
-  function stageIndex(id) { for (var i = 0; i < K.stages.length; i++) if (K.stages[i].id === id) return i; return -1; }
-  function nextBtn(id) {
-    var i = stageIndex(id), n = K.stages[i + 1];
-    return n ? '<button class="btn btn-gold btn-block" data-go="' + n.id + '">مرحلهٔ بعد: ' + n.name + ' ←</button>' : '<button class="btn btn-gold btn-block" data-go="home">بازگشت به خانه</button>';
+  function illu(src, alt, cls) { return '<div class="illu ' + (cls || '') + '"><img src="' + src + '" alt="' + esc(alt) + '"></div>'; }
+  function stars(n) { var s = ''; for (var i = 0; i < 3; i++) s += i < n ? '★' : '☆'; return '<span class="stars">' + s + '</span>'; }
+  function seal(on) {
+    return '<svg class="seal" viewBox="0 0 44 44" aria-hidden="true"><circle cx="22" cy="22" r="20" fill="' + (on ? '#E3A72F' : '#EFE3C9') + '" stroke="' + (on ? '#B98317' : '#D9CBAE') + '" stroke-width="2" stroke-dasharray="3 2"/>' +
+      '<circle cx="22" cy="22" r="14" fill="none" stroke="' + (on ? '#FFF2C9' : '#fff') + '" stroke-width="1.5"/><path d="M22 11l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L22 27.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1z" fill="' + (on ? '#fff' : '#E2D6BE') + '"/></svg>';
   }
 
+  /* ---------- wedge geometry (unit square, y down) ---------- */
+  function wedgePath(w) {
+    if (w.t === 'w') {
+      var h = w.w / 2;
+      return { stroke: true, d: 'M' + (w.x + w.len) + ' ' + (w.y - h) + ' L' + w.x + ' ' + w.y + ' L' + (w.x + w.len) + ' ' + (w.y + h) };
+    }
+    var dx = w.t === 'v' ? 0 : 1, dy = w.t === 'v' ? 1 : 0, nx = dy, ny = dx, W = (w.w || 0.18) * 0.95, L = w.len;
+    var Ax = w.x + nx * W / 2, Ay = w.y + ny * W / 2, Bx = w.x - nx * W / 2, By = w.y - ny * W / 2, Tx = w.x + dx * L, Ty = w.y + dy * L;
+    var Cx = w.x + dx * W * 0.22, Cy = w.y + dy * W * 0.22;
+    function f(n) { return Math.round(n * 1000) / 1000; }
+    return { d: 'M' + f(Ax) + ' ' + f(Ay) + ' L' + f(Tx) + ' ' + f(Ty) + ' L' + f(Bx) + ' ' + f(By) + ' Q' + f(Cx) + ' ' + f(Cy) + ' ' + f(Ax) + ' ' + f(Ay) + ' Z' };
+  }
+  function wedgeSVG(w, color, op) {
+    var p = wedgePath(w);
+    return p.stroke ? '<path d="' + p.d + '" fill="none" stroke="' + color + '" stroke-width="0.06" stroke-linejoin="miter" stroke-miterlimit="10" opacity="' + (op || 1) + '"/>'
+      : '<path d="' + p.d + '" fill="' + color + '" opacity="' + (op || 1) + '"/>';
+  }
+  function guideSVG(defs) {
+    return defs.map(function (w, i) {
+      var nxp, nyp, ax1, ay1, ax2, ay2;
+      if (w.t === 'v') { nxp = w.x - 0.11; nyp = w.y + 0.02; ax1 = w.x - 0.11; ay1 = w.y + 0.09; ax2 = w.x - 0.11; ay2 = w.y + Math.min(w.len, 0.4); }
+      else if (w.t === 'h') { nxp = w.x - 0.02; nyp = w.y - 0.12; ax1 = w.x + 0.06; ay1 = w.y - 0.12; ax2 = w.x + Math.min(w.len, 0.4); ay2 = w.y - 0.12; }
+      else { nxp = w.x - 0.06; nyp = w.y; ax1 = ax2 = ay1 = ay2 = null; }
+      var a = ax1 == null ? '' : '<line x1="' + ax1 + '" y1="' + ay1 + '" x2="' + ax2 + '" y2="' + ay2 + '" stroke="#3F9BD6" stroke-width="0.012" stroke-dasharray="0.025 0.015" marker-end="url(#arr)"/>';
+      return a + '<circle cx="' + nxp + '" cy="' + nyp + '" r="0.045" fill="#E8734A"/><text x="' + nxp + '" y="' + (nyp + 0.018) + '" font-size="0.055" font-weight="700" fill="#fff" text-anchor="middle" font-family="Vazirmatn">' + fn(i + 1) + '</text>';
+    }).join('');
+  }
+  function padSVG(id, defs, mode, user, cls) {
+    var model = '';
+    if (mode === 'guide') model = defs.map(function (w) { return wedgeSVG(w, '#C9A56A', 0.38); }).join('') + guideSVG(defs);
+    else if (mode === 'faint') model = defs.map(function (w) { return wedgeSVG(w, '#C9A56A', 0.22); }).join('');
+    return '<svg id="' + id + '" class="pad-svg ' + (cls || '') + '" viewBox="0 0 1 1" role="img" aria-label="صفحهٔ مشق">' +
+      '<defs><marker id="arr" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3F9BD6"/></marker></defs>' +
+      '<g class="model">' + model + '</g><g class="user">' + (user || []).map(function (w) { return wedgeSVG(w, '#5E3A22'); }).join('') + '</g><g class="preview"></g></svg>';
+  }
+  function classify(S, E, defs) {
+    var dx = E.x - S.x, dy = E.y - S.y, dist = Math.hypot(dx, dy);
+    var dw = (defs || []).filter(function (w) { return w.t === 'w'; })[0] || { len: 0.32, w: 0.6 };
+    if (dist < 0.05) return { t: 'w', x: S.x, y: S.y, len: dw.len, w: dw.w };
+    if (Math.abs(dx) <= 0.45 * Math.abs(dy)) return { t: 'v', x: (S.x + E.x) / 2, y: Math.min(S.y, E.y), len: Math.abs(dy), w: 0.18 };
+    if (Math.abs(dy) <= 0.45 * Math.abs(dx)) return { t: 'h', x: Math.min(S.x, E.x), y: (S.y + E.y) / 2, len: Math.abs(dx), w: 0.18 };
+    var tip = S.x < E.x ? S : E;
+    return { t: 'w', x: tip.x, y: tip.y, len: Math.abs(dx), w: Math.max(2 * Math.abs(dy), 0.3) };
+  }
+  var TNAME = { v: 'میخ ایستاده', h: 'میخ افقی', w: 'گوشه‌میخ' };
+  function score(defs, user) {
+    var used = {}, matched = 0, dsum = 0, wrongDir = [], missing = [];
+    defs.forEach(function (d, i) {
+      var best = -1, bd = 9;
+      user.forEach(function (u, j) {
+        if (used[j] || u.t !== d.t) return;
+        var dist = Math.hypot(u.x - d.x, u.y - d.y), tol = d.t === 'w' ? 0.2 : 0.16;
+        var r = d.t === 'w' ? 1 : u.len / d.len;
+        if (dist < tol && r > 0.45 && r < 1.9 && dist < bd) { bd = dist; best = j; }
+      });
+      if (best >= 0) { used[best] = true; matched++; dsum += bd; }
+      else {
+        var near = user.some(function (u, j) { return !used[j] && u.t !== d.t && Math.hypot(u.x - d.x, u.y - d.y) < 0.18; });
+        (near ? wrongDir : missing).push(i);
+      }
+    });
+    var extra = user.length - matched, n = defs.length, mean = matched ? dsum / matched : 1;
+    var st = matched === n && extra === 0 && mean < 0.085 ? 3 : matched === n && extra <= 1 ? 2 : matched >= Math.ceil(n / 2) ? 1 : 0;
+    var msg = [];
+    if (st === 3) msg.push('عالی! مثل دبیران داریوش نوشتی.');
+    else if (st === 2) msg.push(extra ? 'همهٔ میخ‌ها درست است؛ فقط یک میخ اضافه داری.' : 'همهٔ میخ‌ها درست است؛ جای آن‌ها را کمی دقیق‌تر کن.');
+    wrongDir.forEach(function (i) { msg.push('جهت میخ شمارهٔ ' + fn(i + 1) + ' درست نیست؛ باید ' + TNAME[defs[i].t] + ' باشد.'); });
+    if (missing.length) msg.push(fn(missing.length) + ' میخ جا افتاده یا جایش دور است: ' + missing.map(function (i) { return TNAME[defs[i].t] + ' ' + fn(i + 1); }).join('، ') + '.');
+    if (extra > 1) msg.push(fn(extra) + ' میخ اضافه کشیده‌ای.');
+    return { stars: st, msg: msg, matched: matched, n: n };
+  }
+  /* attach drag-to-place-wedge input to an SVG pad */
+  function bindPad(svg, defs, user, onChange) {
+    var start = null, pid = null;
+    function pt(e) { var r = svg.getBoundingClientRect(); return { x: Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)), y: Math.max(0, Math.min(1, (e.clientY - r.top) / r.height)) }; }
+    svg.addEventListener('pointerdown', function (e) { e.preventDefault(); start = pt(e); pid = e.pointerId; try { svg.setPointerCapture(pid); } catch (x) {} });
+    svg.addEventListener('pointermove', function (e) { if (!start || e.pointerId !== pid) return; var w = classify(start, pt(e), defs); svg.querySelector('.preview').innerHTML = wedgeSVG(w, '#E8734A', 0.7); });
+    function end(e) {
+      if (!start || e.pointerId !== pid) return; var w = classify(start, pt(e), defs); start = null;
+      svg.querySelector('.preview').innerHTML = '';
+      ['x', 'y', 'len', 'w'].forEach(function (k) { w[k] = Math.round(w[k] * 1000) / 1000; });
+      user.push(w); svg.querySelector('.user').innerHTML = user.map(function (u) { return wedgeSVG(u, '#5E3A22'); }).join(''); onChange && onChange();
+    }
+    svg.addEventListener('pointerup', end); svg.addEventListener('pointercancel', function () { start = null; svg.querySelector('.preview').innerHTML = ''; });
+  }
+  function thumb(ws, defs) { return '<svg viewBox="0 0 1 1">' + (defs ? defs.map(function (w) { return wedgeSVG(w, '#C9A56A', 0.25); }).join('') : '') + ws.map(function (w) { return wedgeSVG(w, '#5E3A22'); }).join('') + '</svg>'; }
+
   /* ---------- home ---------- */
+  function l1Count() { return K.parts.filter(function (p) { return P.L[1][p.id]; }).length; }
+  function nextPart() { var n = K.parts.filter(function (p) { return !P.L[1][p.id]; })[0]; return n ? n.id : null; }
   function home() {
-    var doneN = K.stages.filter(function (s) { return P.done[s.id]; }).length;
-    var nextId = (K.stages.filter(function (s) { return !P.done[s.id]; })[0] || {}).id;
-    var h = '<section class="hero"><img class="hero-img" src="images/persepolis-gate.webp" alt="دروازهٔ ملل در تخت جمشید" fetchpriority="high">' +
-      '<div class="hero-top"><img class="mini-logo" src="icons/icon-192.png" alt="Kisti"><img class="flag" src="images/shir-o-khorshid.svg" alt="پرچم شیر و خورشید"></div>' +
-      '<h1 dir="ltr">Kisti</h1><p class="tag">کیستی · خواندن خط‌های باستانی ایران</p>' +
-      '<p class="lede">از الفبا تا خواندن کتیبه‌های واقعی؛ همه به زبان فارسی و ساده. با نشانه‌های میخی شروع می‌کنیم که داریوش بزرگ بر سنگ بیستون کند.</p>' +
-      '<div class="hero-actions"><button class="btn btn-gold" data-go="' + (nextId || 'alphabet') + '">' + (doneN ? 'ادامهٔ درس ۱' : 'شروع درس ۱') + '</button><button class="btn btn-ghost" data-install>📲 نصب اپ</button></div>' +
-      '<p class="credit">ساخته شده توسط <b dir="ltr" lang="en">Daniel Mozafari</b></p></section>';
-    h += '<section class="sec"><div class="sec-h"><h2>سه خط باستانی</h2><span class="rule"></span></div><div class="scripts">' +
-      K.scripts.map(function (s) {
-        return '<button class="script' + (s.active ? '' : ' soon') + '" ' + (s.active ? 'data-go="alphabet"' : 'data-soon="1"') + '><img src="' + s.img + '" alt="" loading="lazy"><div class="body"><h3>' + s.name + '</h3><div class="latin en">' + s.latin + '</div><p>' + s.blurb + '</p>' +
-          (s.sample ? '<div class="sample cu">' + s.sample + '</div>' : '') + '<span class="pill ' + (s.active ? 'pill-on">فعال · درس ۱' : 'pill-soon">به‌زودی') + '</span></div></button>';
-      }).join('') + '</div></section>';
-    h += '<section class="sec"><div class="sec-h"><h2>درس ۱ · خط میخی</h2><span class="rule"></span></div>' +
-      '<div class="lesson-head"><h3>نخستین نشانه‌ها و نام داریوش</h3><p>چهار گام: الفبا ← واژه ← جمله ← کتیبه</p><div class="prog"><i style="width:' + (doneN * 25) + '%"></i></div><div class="prog-t">' + fn(doneN) + ' از ۴ گام تمام شده</div></div>' +
-      '<div class="stages">' + K.stages.map(function (s) {
-        var d = P.done[s.id], nx = s.id === nextId;
-        return '<button class="stage' + (d ? ' done' : nx ? ' next' : '') + '" data-go="' + s.id + '"><span class="ic cu">' + s.icon + '</span><span class="t"><b>' + fn(s.n) + '. ' + s.name + '</b><span>' + s.desc + '</span></span><span class="st">' + (d ? '✓ تمام شد' : nx ? 'شروع' : 'باز') + '</span></button>';
-      }).join('') + '</div></section>';
-    h += '<section class="sec"><div class="name-card"><h3>نام تو به خط میخی ✨</h3><p>نامت را به فارسی بنویس تا ببینی دبیران داریوش چطور آن را می‌نوشتند (تقریبی و برای سرگرمی).</p>' +
-      '<div class="name-row"><input id="nm" type="text" inputmode="text" autocomplete="off" placeholder="مثلاً دانیال" maxlength="20" value="' + esc(P.name || '') + '"></div><div class="name-out" id="nmo"></div></div></section>';
-    h += '<section class="sec"><div class="sec-h"><h2>شکوه ایران باستان</h2><span class="rule"></span></div><div class="gallery">' +
-      K.gallery.map(function (g) { return '<figure class="g-item" style="margin:0"><img src="' + g.img + '" alt="' + g.name + '" loading="lazy"><div><b>' + g.name + '</b><span>' + g.era + '</span></div></figure>'; }).join('') + '</div></section>';
-    h += '<p class="foot">تلفظ‌ها بازسازی تقریبی پارسی باستان‌اند. · <button data-go="credits">منبع عکس‌ها</button></p>';
+    var c = l1Count(), np = nextPart();
+    var h = '<header class="page-h"><div class="row"><img class="mini-logo" src="icons/icon-192.png" alt="Kisti"><h1 class="brand" dir="ltr" style="text-align:right">Kisti</h1><img class="flag" src="images/shir-o-khorshid.svg" alt="پرچم شیر و خورشید"></div>' + RULE +
+      '<p class="subt">کیستی · خواندن خط‌های باستانی ایران</p></header>' + illu('images/persepolis.webp', 'تخت جمشید در روزگار هخامنشیان') +
+      '<div class="text"><p>از الفبا تا خواندن کتیبه‌های واقعی؛ همه به فارسی و ساده. با نشانه‌های میخی شروع می‌کنیم: هر نشانه را می‌بینی، می‌شنوی و با انگشت <b>مشق</b> می‌کنی.</p></div>' +
+      '<div class="btns"><button class="btn btn-coral" data-go="' + (np ? 'lesson1' : 'words') + '">' + (c ? 'ادامهٔ درس ۱' : 'شروع درس ۱') + '</button><button class="btn btn-line" data-install>📲 نصب اپ</button></div>' +
+      '<p class="credit">ساخته شده توسط <b dir="ltr" lang="en">Daniel Mozafari</b></p>';
+    h += '<section class="sec"><div class="sec-h"><h2>سه خط باستانی</h2></div>' + RULE + '<div class="scripts">' + K.scripts.map(function (s) {
+      return '<button class="card script' + (s.active ? '' : ' soon') + '" ' + (s.active ? 'data-go="lesson1"' : 'data-soon="1"') + '><img src="' + s.img + '" alt="" loading="lazy"><div class="body"><h3>' + s.name + '</h3><div class="latin en">' + s.latin + '</div><p>' + s.blurb + '</p>' +
+        (s.sample ? '<div class="sample cu">' + s.sample + '</div>' : '') + '<span class="pill' + (s.active ? '">فعال' : ' gray">به‌زودی') + '</span></div></button>';
+    }).join('') + '</div></section>';
+    h += '<section class="sec"><div class="sec-h"><h2>درس‌های الفبا</h2><span class="pill">خط میخی</span></div>' + RULE + '<div class="lessons">' + K.lessons.map(function (l, i) {
+      if (!l.active) return '<button class="card lrow locked" data-soon="1"><span class="num">' + fn(l.n) + '</span><span class="t"><b>درس ' + fn(l.n) + '</b><span class="d">' + l.title + '</span></span><span class="st">🔒 به‌زودی</span></button>';
+      return '<button class="card lrow c1' + (c === 4 ? ' done' : ' next') + '" data-go="lesson1"><span class="num">' + fn(l.n) + '</span><span class="t"><b>درس ' + fn(l.n) + ' · ' + l.title + ' <span class="glyphs">' + l.signs.map(function (id) { return SIG[id].g; }).join(' ') + '</span></b><span class="d">' + fn(c) + ' از ۴ بخش: یادگیری، مشق، آزمونک، مرور</span><div class="bar"><i style="width:' + c * 25 + '%"></i></div></span><span class="st">' + (c === 4 ? '✓ تمام شد' : c ? 'ادامه' : 'شروع') + '</span></button>';
+    }).join('') + '</div></section>';
+    h += '<section class="sec"><div class="sec-h"><h2>از نشانه تا کتیبه</h2></div>' + RULE + '<div class="lessons">' + K.steps.map(function (s, i) {
+      var d = P.done[s.id];
+      return '<button class="card lrow c' + (i + 2) + (d ? ' done' : '') + '" data-go="' + s.id + '"><span class="num">' + fn(i + 1) + '</span><span class="t"><b>' + s.name + '</b><span class="d">' + s.desc + '</span></span><span class="st">' + (d ? '✓ تمام شد' : 'باز') + '</span></button>';
+    }).join('') + '</div></section>';
+    var nbN = Object.keys(P.nb).reduce(function (a, k) { return a + (P.nb[k].tries || []).length; }, 0);
+    h += '<section class="sec"><div class="sec-h"><h2>دفتر مشق من</h2></div>' + RULE + '<button class="card lrow c4" data-go="notebook"><span class="num">✍</span><span class="t"><b>' + (nbN ? fn(nbN) + ' مشق ذخیره شده' : 'هنوز مشقی ننوشته‌ای') + '</b><span class="d">همهٔ مشق‌هایت با مُهر ستاره اینجا می‌ماند.</span></span><span class="st">باز کن</span></button></section>';
+    h += '<section class="sec"><div class="sec-h"><h2>نام تو به خط میخی</h2></div>' + RULE + '<div class="card name-card"><p class="muted">نامت را به فارسی بنویس تا ببینی دبیران داریوش چطور آن را می‌نوشتند (تقریبی و برای سرگرمی).</p>' +
+      '<input id="nm" type="text" autocomplete="off" placeholder="مثلاً دانیال" maxlength="20" value="' + esc(P.name || '') + '"><div class="name-out" id="nmo"></div></div></section>';
+    h += '<section class="sec"><div class="sec-h"><h2>شکوه ایران باستان</h2></div>' + RULE + '<div class="gallery">' +
+      K.gallery.map(function (g) { return '<figure class="card g-item"><img src="' + g.img + '" alt="' + g.name + '" loading="lazy"><div><b>' + g.name + '</b><span>' + g.era + '</span></div></figure>'; }).join('') + '</div></section>';
+    h += '<p class="foot">همهٔ تصویرها نقاشی‌اند، نه عکس. تلفظ‌ها بازسازی تقریبی‌اند. · <button data-go="credits">دربارهٔ تصویرها و قلم‌ها</button></p>';
     render(h);
     var nm = $('#nm'); function upd() { P.name = nm.value; save(); $('#nmo').innerHTML = nameOut(nm.value); } nm.addEventListener('input', upd); upd();
   }
-
   /* ---------- name in cuneiform (approximate, playful) ---------- */
   var CMAP = { 'ب': '𐎲', 'پ': '𐎱', 'ت': '𐎫', 'ط': '𐎫', 'ث': '𐎰', 'ج': '𐎩', 'چ': '𐎨', 'ح': '𐏃', 'ه': '𐏃', 'خ': '𐎧', 'د': '𐎭', 'ذ': '𐏀', 'ر': '𐎼', 'ز': '𐏀', 'ژ': '𐏀', 'ض': '𐏀', 'ظ': '𐏀',
     'س': '𐎿', 'ص': '𐎿', 'ش': '𐏁', 'ف': '𐎳', 'ق': '𐎥', 'غ': '𐎥', 'ک': '𐎣', 'ك': '𐎣', 'گ': '𐎥', 'ل': '𐎾', 'م': '𐎶', 'ن': '𐎴' };
@@ -117,54 +213,142 @@
     return '<div class="cu">' + words.join(DIV) + '</div><small>' + esc(s) + ' · به شیوهٔ کتیبه‌ها، از چپ به راست</small>';
   }
 
-  /* ---------- 1. alphabet ---------- */
-  var A = { sel: 'a', quiz: null };
-  function alphabet() {
+  /* ---------- lesson 1 overview ---------- */
+  function lesson1() {
+    var h = head('درس ۱', 'سطح ۱ · الفبا', 'نخستین نشانه‌ها: ' + L1.map(function (id) { return SIG[id].g; }).join(' '), 'home') + illu('images/darius.webp', 'داریوش بزرگ در بیستون');
+    h += '<div class="mascot-row"><img class="mascot" src="images/mascot.webp" alt="دبیر کوچک"><div class="bubble">درود! من دبیر کوچک تخت جمشیدم. امروز پنج نشانهٔ نخست را با هم یاد می‌گیریم، با انگشت مشق می‌کنیم و بعد یک آزمونک کوچک داریم.</div></div>';
+    h += '<div class="qwrap">' + K.parts.map(function (p, i) {
+      var d = P.L[1][p.id], nx = p.id === nextPart();
+      return '<button class="card lrow c' + (i + 1) + (d ? ' done' : nx ? ' next' : '') + '" data-go="' + p.id + '"><span class="num">' + fn(i + 1) + '</span><span class="t"><b>' + p.name + '</b><span class="d">' + p.desc + '</span></span><span class="st">' + (d ? '✓ تمام شد' : nx ? 'شروع' : 'باز') + '</span></button>';
+    }).join('') + '</div>';
+    if (l1Count() === 4) h += '<div class="card celebrate"><div class="big">🏛️</div><h3>درس ۱ تمام شد!</h3><p>حالا با همین نشانه‌ها واژه بساز.</p><div style="height:10px"></div><button class="btn btn-coral btn-block" data-go="words">واژه‌سازی ←</button></div>';
+    render(h);
+  }
+
+  /* ---------- 1. learn ---------- */
+  var A = { sel: L1[0] };
+  function learn() {
     var s = SIG[A.sel];
     if (P.seen.indexOf(s.id) < 0) { P.seen.push(s.id); save(); }
-    var h = bar('گام ۱ · الفبای میخی', fn(P.seen.length) + ' از ' + fn(K.signs.length));
-    h += '<div class="card intro"><h3>خط میخی پارسی باستان چیست؟</h3><p>خطی که در زمان داریوش بزرگ (حدود ۵۲۰ پیش از میلاد) برای نوشتن زبان پارسی باستان ساخته شد. حدود ۳۶ نشانهٔ آوایی، چند «اندیشه‌نگار» (مثل 𐏋 «شاه»)، چند عدد و یک جداکنندهٔ واژه 𐏐 دارد.</p>' +
-      '<p><b>دو نکتهٔ مهم:</b> این خط <b>از چپ به راست</b> نوشته می‌شود. و بیشتر نشانه‌ها «هجا» هستند: هم‌خوان + «اَ»؛ یعنی 𐎭 خودش «دَ» است.</p></div>';
-    h += '<div class="card detail"><div class="big cu">' + s.g + '</div><div class="row"><span class="lat">' + s.tr + '</span><span class="fa">' + s.fa + '</span></div>' +
-      '<button class="play" data-play="' + s.audio + '">🔊 بشنو</button><p class="shape">شکل: ' + s.shape + '</p><p class="txt">' + s.text + '</p></div>';
-    h += '<div class="sign-grid">' + K.signs.map(function (x) {
-      return '<button class="sign' + (x.id === A.sel ? ' sel' : '') + (P.seen.indexOf(x.id) >= 0 ? ' seen' : '') + '" data-sign="' + x.id + '"><span class="cu">' + x.g + '</span><span class="lat">' + x.tr + '</span></button>';
-    }).join('') + '</div>';
-    h += '<div class="sec"><button class="btn btn-lapis btn-block" data-act="quiz">آزمونک: این کدام نشانه است؟</button>' + (P.done.alphabet ? '<div style="height:10px"></div>' + nextBtn('alphabet') : '') + '</div>';
+    var seenAll = L1.every(function (id) { return P.seen.indexOf(id) >= 0; });
+    if (seenAll) partDone('learn');
+    var h = head('درس ۱ <span class="dot">•</span> <span class="blue">یادگیری</span>', fn(L1.filter(function (id) { return P.seen.indexOf(id) >= 0; }).length) + ' از ۵', null, 'lesson1');
+    if (!P.seen.length || A.sel === L1[0]) h += '<div class="text"><p class="muted">خط میخی پارسی باستان <b>از چپ به راست</b> نوشته می‌شود. بیشتر نشانه‌ها «هجا» هستند: هم‌خوان + «اَ». هر نشانه از سه نوع میخ ساخته می‌شود: میخ ایستاده، میخ افقی و گوشه‌میخ.</p></div>';
+    h += '<div class="card signhero"><div class="big cu">' + s.g + '</div><div class="vals"><span class="lat">' + s.tr + '</span><span class="fa">' + s.fa + '</span></div><button class="play" data-play="' + s.audio + '">🔊 بشنو</button>' +
+      '<div class="hint">💡 <b>راز به‌یادسپاری:</b> ' + s.hint + '</div><p class="muted" style="margin-top:8px;text-align:right">شکل: ' + s.shape + '</p><p style="margin-top:6px;text-align:right">' + s.text + '</p></div>';
+    h += '<div class="signs5">' + L1.map(function (id) { var x = SIG[id]; return '<button class="sg' + (id === A.sel ? ' sel' : '') + (P.seen.indexOf(id) >= 0 ? ' seen' : '') + '" data-sign="' + id + '"><span class="cu">' + x.g + '</span><span class="lat">' + x.tr.split(' / ')[0] + '</span></button>'; }).join('') + '</div>';
+    var i = L1.indexOf(A.sel);
+    h += '<div class="btns">' + (i < L1.length - 1 ? '<button class="btn btn-coral btn-block" data-sign="' + L1[i + 1] + '">نشانهٔ بعدی ←</button>' : '<button class="btn btn-coral btn-block" data-go="mashq">برو به مشق ✍</button>') + '</div>';
     render(h);
   }
+
+  /* ---------- 2. mashq (5 tries per sign, wedge tool) ---------- */
+  var M = { si: 0, ti: 0, user: [], res: null, showModel: false };
+  function modeFor(ti) { return ti === 0 ? 'guide' : ti < 3 ? 'faint' : 'none'; }
+  var MODE_TXT = { guide: 'با الگو و شمارهٔ ترتیب', faint: 'با الگوی کم‌رنگ', none: 'از حافظه، بدون الگو' };
+  function mashq() {
+    var id = L1[M.si], s = SIG[id], defs = K.strokes[id], mode = M.showModel && modeFor(M.ti) === 'none' ? 'faint' : modeFor(M.ti);
+    var nb = P.nb[id] = P.nb[id] || { tries: [] };
+    var h = head('درس ۱ <span class="dot">•</span> <span class="blue">مشق</span>', 'نشانهٔ ' + fn(M.si + 1) + ' از ۵', null, 'lesson1');
+    h += '<div class="mq-top"><span class="cu">' + s.g + '</span><div class="t"><b><span class="lat">' + s.tr + '</span> · ' + s.fa + '</b><div class="muted">سَرمشق: ' + fn(defs.length) + ' میخ · تلاش ' + fn(M.ti + 1) + ' از ۵ · ' + MODE_TXT[mode] + '</div></div><button class="play small" data-play="' + s.audio + '">🔊</button></div>';
+    h += '<div class="tries">' + [0, 1, 2, 3, 4].map(function (t) { var r = nb.tries[t]; return '<span class="' + (t === M.ti ? 'cur' : r && r.s > 0 ? 'ok' : '') + '">' + (r && t !== M.ti ? stars(r.s) : fn(t + 1)) + '</span>'; }).join('') + '</div>';
+    h += '<div class="padwrap">' + padSVG('pad', defs, mode, M.user) + '<span class="pill ' + (mode === 'none' ? 'gold' : 'blue') + ' mode-tag">' + MODE_TXT[mode] + '</span></div>';
+    h += '<div class="legend"><span><b>میخ ایستاده:</b> به پایین بکش</span><span><b>میخ افقی:</b> به راست بکش</span><span><b>گوشه‌میخ:</b> کج بکش یا یک ضربه بزن</span></div>';
+    if (!M.res) {
+      h += '<div class="tools"><button class="btn btn-line" data-act="undo-w"' + (M.user.length ? '' : ' disabled') + '>↶ برگرداندن</button><button class="btn btn-line" data-act="clear-w"' + (M.user.length ? '' : ' disabled') + '>پاک کردن</button><button class="btn btn-coral" data-act="check-w"' + (M.user.length ? '' : ' disabled') + '>بررسی ✓</button></div>';
+    } else {
+      var r = M.res;
+      h += '<div class="feedback' + (r.stars >= 2 ? ' good' : '') + '"><div class="seals">' + [0, 1, 2].map(function (i) { return seal(i < r.stars); }).join('') + '</div>' + r.msg.map(function (m) { return '<p>' + m + '</p>'; }).join('') + '</div>';
+      h += '<div class="tools">' + (r.stars === 0 ? '<button class="btn btn-line" data-act="retry-w">دوباره</button>' + (modeFor(M.ti) === 'none' && !M.showModel ? '<button class="btn btn-line" data-act="model-w">💡 نمایش الگو</button>' : '') :
+        '<button class="btn btn-line" data-act="retry-w">دوباره</button><button class="btn btn-coral" data-act="next-w">' + (M.ti < 4 ? 'تلاش بعدی ←' : M.si < 4 ? 'نشانهٔ بعدی ←' : 'پایان مشق ←') + '</button>') + '</div>';
+    }
+    render(h);
+    if (!M.res) bindPad(document.getElementById('pad'), defs, M.user, function () { app.querySelectorAll('[data-act="undo-w"],[data-act="clear-w"],[data-act="check-w"]').forEach(function (b) { b.disabled = !M.user.length; }); });
+  }
+  function mashqCheck() {
+    var id = L1[M.si], r = score(K.strokes[id], M.user);
+    M.res = r;
+    var nb = P.nb[id] = P.nb[id] || { tries: [] };
+    nb.tries[M.ti] = { s: r.stars, w: M.user.slice(), t: Date.now(), m: modeFor(M.ti) };
+    nb.best = Math.max(nb.best || 0, r.stars); save();
+    mashq();
+  }
+  function mashqNext() {
+    M.res = null; M.user = []; M.showModel = false;
+    if (M.ti < 4) M.ti++;
+    else if (M.si < 4) { M.si++; M.ti = 0; P.nb[L1[M.si]] = { tries: [], best: (P.nb[L1[M.si]] || {}).best || 0 }; save(); }
+    else { partDone('mashq'); M.si = 0; M.ti = 0;
+      render(head('درس ۱ <span class="dot">•</span> <span class="blue">مشق</span>', 'تمام شد', null, 'lesson1') + '<div class="card celebrate"><div class="seals">' + seal(1) + seal(1) + seal(1) + '</div><h3>پنج نشانه، هر کدام پنج بار!</h3><p>مشق‌هایت در «دفتر مشق من» ذخیره شد.</p></div><div class="btns"><button class="btn btn-coral btn-block" data-go="quiz">آزمونک ←</button><button class="btn btn-line btn-block" data-go="notebook">دفتر مشق من</button></div>');
+      window.scrollTo(0, 0); return; }
+    mashq(); window.scrollTo(0, 0);
+  }
+
+  /* ---------- 3. quiz (book-style numbered cards) ---------- */
+  var Q = null;
   function makeQuiz() {
-    var order = shuffle(K.signs).concat(shuffle(K.signs).slice(0, 2));
-    return { i: 0, score: 0, qs: order.map(function (s, n) {
-      var others = shuffle(K.signs.filter(function (x) { return x.id !== s.id; })).slice(0, 3);
-      return { s: s, type: n % 2 ? 'g' : 't', opts: shuffle(others.concat([s])), tried: false };
-    }) };
+    var a = shuffle(L1).slice(0, 4), b = shuffle(L1).slice(0, 4), w = shuffle(L1).slice(0, 2), qs = [];
+    a.forEach(function (id) { qs.push({ type: 't', s: SIG[id], opts: shuffle([id].concat(shuffle(L1.filter(function (x) { return x !== id; })).slice(0, 3))) }); });
+    b.forEach(function (id) { qs.push({ type: 'g', s: SIG[id], opts: shuffle([id].concat(shuffle(L1.filter(function (x) { return x !== id; })).slice(0, 3))) }); });
+    qs = shuffle(qs); w.forEach(function (id, i) { qs.splice(3 + i * 4, 0, { type: 'w', s: SIG[id] }); });
+    return { i: 0, score: 0, qs: qs, user: [], res: null };
   }
   function quiz() {
-    var Q = A.quiz;
+    if (!Q) Q = makeQuiz();
+    var h = head('درس ۱ <span class="dot">•</span> <span class="blue">آزمونک</span>', 'سطح ۱ · الفبا', null, 'lesson1');
     if (Q.i >= Q.qs.length) {
-      var pass = Q.score >= 7; if (pass) markDone('alphabet');
-      render(bar('آزمونک الفبا') + '<div class="card celebrate"><div class="big">' + (pass ? '🏛️' : '📜') + '</div><h3>' + (pass ? 'آفرین! الفبای درس ۱ را یاد گرفتی' : 'خوب بود، یک بار دیگر تمرین کن') + '</h3><p>' + fn(Q.score) + ' از ' + fn(Q.qs.length) + ' پاسخ درست در نخستین تلاش</p></div><div class="sec">' +
-        (pass ? nextBtn('alphabet') : '<button class="btn btn-gold btn-block" data-act="quiz">دوباره</button>') + '<div style="height:10px"></div><button class="btn btn-line btn-block" data-go="alphabet">مرور نشانه‌ها</button></div>');
-      return;
+      var pass = Q.score >= 7; if (pass) partDone('quiz');
+      h += '<div class="card celebrate"><div class="seals">' + [0, 1, 2].map(function (i) { return seal(i < (Q.score >= 9 ? 3 : Q.score >= 7 ? 2 : 1)); }).join('') + '</div><h3>' + (pass ? 'آفرین! آزمونک را گذراندی' : 'خوب بود؛ یک بار دیگر') + '</h3><p>' + fn(Q.score) + ' از ' + fn(Q.qs.length) + ' درست در نخستین تلاش</p></div>' +
+        '<div class="btns">' + (pass ? '<button class="btn btn-coral btn-block" data-go="review">مرور ←</button>' : '<button class="btn btn-coral btn-block" data-act="quiz-again">دوباره</button>') + '</div>';
+      render(h); return;
     }
-    var q = Q.qs[Q.i];
-    var h = bar('آزمونک الفبا', fn(Q.i + 1) + ' از ' + fn(Q.qs.length));
-    h += '<div class="card quiz"><div class="dots">' + Q.qs.map(function (_, n) { return '<i class="' + (n < Q.i ? 'on' : n === Q.i ? 'cur' : '') + '"></i>'; }).join('') + '</div>';
-    if (q.type === 't') h += '<p class="q">این کدام نشانه است؟</p><div class="qg cu">' + q.s.g + '</div><div class="opts">' + q.opts.map(function (o) { return '<button class="opt" data-ans="' + o.id + '"><span class="lat">' + o.tr.split(' / ')[0] + '</span> · ' + o.fa.split(' / ').pop() + '</button>'; }).join('') + '</div>';
-    else h += '<p class="q">نشانهٔ «' + q.s.fa + '» (<span class="lat">' + q.s.tr + '</span>) کدام است؟</p><div style="height:10px"></div><div class="opts">' + q.opts.map(function (o) { return '<button class="opt" data-ans="' + o.id + '"><span class="cu">' + o.g + '</span></button>'; }).join('') + '</div>';
-    h += '</div>';
+    var q = Q.qs[Q.i], c = 'c' + ((Q.i % 6) + 1);
+    h += '<div class="qwrap"><p class="muted">پاسخ درست را انتخاب کن.</p><div class="qprog">' + Q.qs.map(function (_, n) { return '<i class="' + (n < Q.i ? 'on' : n === Q.i ? 'cur' : '') + '"></i>'; }).join('') + '</div><div class="qcard ' + c + '">';
+    if (q.type === 't') h += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span>این نشانه چه صدایی دارد؟</div><div class="qglyph cu">' + q.s.g + '</div><div class="opts">' + q.opts.map(function (id, k) { var o = SIG[id]; return '<button class="opt" data-ans="' + id + '"><span class="L">' + LET[k] + '</span><span class="lat">' + o.tr.split(' / ')[0] + '</span> · ' + o.fa.split(' / ').pop() + '</button>'; }).join('') + '</div>';
+    else if (q.type === 'g') h += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span><span>نشانهٔ «' + q.s.fa.split(' / ').pop() + '» (<span class="lat">' + q.s.tr.split(' / ')[0] + '</span>) کدام است؟</span><button class="play small" data-play="' + q.s.audio + '">🔊</button></div><div class="opts">' + q.opts.map(function (id, k) { return '<button class="opt" data-ans="' + id + '"><span class="L">' + LET[k] + '</span><span class="cu">' + SIG[id].g + '</span></button>'; }).join('') + '</div>';
+    else {
+      h += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span><span>بدون الگو بنویس: «' + q.s.fa.split(' / ').pop() + '» (<span class="lat">' + q.s.tr.split(' / ')[0] + '</span>)</span><button class="play small" data-play="' + q.s.audio + '">🔊</button></div><div style="height:8px"></div>' +
+        padSVG('qpad', K.strokes[q.s.id], Q.res ? 'faint' : 'none', Q.user, 'small');
+      if (!Q.res) h += '<div class="tools" style="padding:10px 0 0"><button class="btn btn-line" data-act="qclear">پاک کردن</button><button class="btn btn-coral" data-act="qcheck">بررسی ✓</button></div>';
+      else h += '<div class="feedback' + (Q.res.stars >= 2 ? ' good' : '') + '" style="margin:10px 0 0"><div class="seals">' + [0, 1, 2].map(function (i) { return seal(i < Q.res.stars); }).join('') + '</div><p>' + (Q.res.stars >= 2 ? 'درست است!' : 'الگوی درست، کم‌رنگ نشان داده شد.') + '</p></div><div class="tools" style="padding:10px 0 0"><button class="btn btn-coral" data-act="qnext">ادامه ←</button></div>';
+    }
+    h += '</div></div>';
     render(h);
+    if (q.type === 'w' && !Q.res) bindPad(document.getElementById('qpad'), K.strokes[q.s.id], Q.user);
   }
   function answer(btn) {
-    var Q = A.quiz, q = Q.qs[Q.i], id = btn.getAttribute('data-ans');
+    var q = Q.qs[Q.i], id = btn.getAttribute('data-ans');
     if (id === q.s.id) {
       btn.classList.add('ok'); if (!q.tried) Q.score++; Audio_.play(q.s.audio);
       app.querySelectorAll('.opt').forEach(function (b) { b.disabled = true; });
-      setTimeout(function () { Q.i++; quiz(); }, 750);
+      setTimeout(function () { Q.i++; quiz(); }, 800);
     } else { q.tried = true; btn.classList.add('bad'); btn.disabled = true; }
   }
 
+  /* ---------- 4. review ---------- */
+  var R = { open: {} };
+  function review() {
+    var h = head('درس ۱ <span class="dot">•</span> <span class="blue">مرور</span>', 'سطح ۱ · الفبا', null, 'lesson1');
+    h += '<div class="mascot-row"><img class="mascot" src="images/mascot.webp" alt=""><div class="bubble">از درس ۲ به بعد، اینجا نشانه‌های درس‌های پیشین را مرور می‌کنیم. چون این نخستین درس است، همین پنج نشانه را مرور کن: روی هر کارت بزن.</div></div>';
+    h += '<div class="signs5">' + L1.map(function (id) { var x = SIG[id], o = R.open[id]; return '<button class="sg' + (o ? ' seen' : '') + '" data-rev="' + id + '"><span class="cu">' + x.g + '</span><span class="lat">' + (o ? x.tr.split(' / ')[0] : '؟') + '</span></button>'; }).join('') + '</div>';
+    var all = L1.every(function (id) { return R.open[id]; });
+    h += '<div class="btns"><button class="btn btn-coral btn-block" data-act="rev-done"' + (all ? '' : ' disabled') + '>' + (P.L[1].review ? '✓ مرور شد · بازگشت به درس' : 'مرور شد ✓') + '</button></div>';
+    render(h);
+  }
+
+  /* ---------- notebook ---------- */
+  function notebook() {
+    var h = head('دفتر مشق من', 'ذخیره روی همین گوشی', null, 'home');
+    h += '<div class="nb">' + L1.map(function (id, i) {
+      var s = SIG[id], nb = P.nb[id] || { tries: [] }, tr = (nb.tries || []).filter(Boolean);
+      return '<div class="card nb-row"><div class="h"><span class="cu">' + s.g + '</span><div class="t"><b><span class="lat">' + s.tr + '</span> · ' + s.fa + '</b><div class="muted">' + (tr.length ? fn(tr.length) + ' مشق · بهترین: ' + stars(nb.best || 0) : 'هنوز مشق نشده') + '</div></div></div>' +
+        (tr.length ? '<div class="nb-thumbs">' + tr.map(function (t) { return thumb(t.w, t.m === 'none' ? null : K.strokes[id]); }).join('') + '</div>' : '') + '</div>';
+    }).join('') + '</div><div class="btns"><button class="btn btn-coral btn-block" data-go="mashq">مشق تازه ✍</button></div>';
+    render(h);
+  }
+  function nextBtn(id) {
+    var i = -1; K.steps.forEach(function (s, k) { if (s.id === id) i = k; }); var n = K.steps[i + 1];
+    return n ? '<button class="btn btn-coral btn-block" data-go="' + n.id + '">بعدی: ' + n.name + ' ←</button>' : '<button class="btn btn-coral btn-block" data-go="home">بازگشت به خانه</button>';
+  }
   /* ---------- builder (shared by words & sentence) ---------- */
   var W = { i: 0 }, B = null;
   function newBuilder(answer, pool) { return { answer: answer, tiles: shuffle(pool.map(function (v, k) { return { v: v, k: k }; })), picked: [], wrong: 0, help: false, solved: false, viaHelp: false }; }
@@ -210,15 +394,15 @@
   function words(state) {
     if (!B || B.kind !== 'word') { wordsInit(); B.kind = 'word'; }
     var w = K.words[W.i];
-    var h = bar('گام ۲ · واژه‌سازی', fn(W.i + 1) + ' از ' + fn(K.words.length));
-    h += '<div class="card task"><div class="goal"><p class="hint">با نشانه‌هایی که یاد گرفتی بنویس:</p><div class="fa">' + w.fa + '</div><div class="lat">' + w.tr + '</div></div>' +
+    var h = head('واژه‌سازی', fn(W.i + 1) + ' از ' + fn(K.words.length), 'با نشانه‌هایی که یاد گرفتی بنویس', 'home') + (W.i === 0 ? illu('images/cyrus-tomb.webp', 'آرامگاه کوروش') : '');
+    h += '<div class="card task"><div class="goal"><p class="muted">' + (w.signs.some(function (id) { return SIG[id].lesson > 1; }) ? 'نشانه‌های تازه از درس ۲: ' + w.signs.filter(function (id) { return SIG[id].lesson > 1; }).map(function (id) { return SIG[id].g + ' ' + SIG[id].tr; }).join('، ') : 'فقط با نشانه‌های درس ۱') + '</p><div class="fa">' + w.fa + '</div><div class="lat">' + w.tr + '</div></div>' +
       '<div class="slots' + (state === 'ok' ? ' ok' : state === 'bad' ? ' bad' : '') + '" data-act="undo">' + slotsHtml('word') + '</div>' +
       '<p class="note">از چپ به راست بچین. برای پاک کردن آخرین نشانه، روی خانه‌ها بزن.</p>';
     if (B.solved) {
       h += '<div class="result"><b>✓ درست است!</b> <span class="cu" style="font-size:1.6rem">' + w.signs.map(function (id) { return SIG[id].g; }).join('') + '</span> = ' + w.say + '<p>' + w.note + '</p><p class="today">🌿 <b>در فارسی امروز:</b> ' + w.today + '</p>' +
         '<button class="play small" data-play="' + w.audio + '">🔊 بشنو</button></div>';
-      if (B.viaHelp) h += '<div class="actions"><button class="btn btn-gold" data-act="wretry">حالا خودت، از اول</button></div>';
-      else h += '<div class="actions"><button class="btn btn-gold" data-act="wnext">' + (W.i < K.words.length - 1 ? 'واژهٔ بعدی ←' : 'پایان واژه‌سازی ←') + '</button></div>';
+      if (B.viaHelp) h += '<div class="actions"><button class="btn btn-coral" data-act="wretry">حالا خودت، از اول</button></div>';
+      else h += '<div class="actions"><button class="btn btn-coral" data-act="wnext">' + (W.i < K.words.length - 1 ? 'واژهٔ بعدی ←' : 'پایان واژه‌سازی ←') + '</button></div>';
     } else {
       h += '<div class="tiles">' + tilesHtml('word') + '</div>';
       if (B.wrong >= 2 && !B.help) h += '<div class="actions"><button class="btn btn-line" data-act="help">💡 کمک گرفتن</button></div>';
@@ -233,13 +417,13 @@
   function sentence(state) {
     var S = K.sentence;
     if (!B || B.kind !== 'sent') { B = newBuilder(S.words, S.words); B.kind = 'sent'; }
-    var h = bar('گام ۳ · جمله‌سازی');
-    h += '<div class="photo-card"><img src="images/darius-behistun.webp" alt="داریوش بزرگ در نگارهٔ بیستون" style="height:200px;object-position:center 20%"><p class="cap">داریوش بزرگ در نگارهٔ بیستون. این جمله سرآغاز کتیبهٔ اوست.</p></div>';
-    h += '<div class="card task"><div class="goal"><p class="hint">این جمله را به خط میخی بساز:</p><div class="fa">' + S.fa + '</div></div>' +
+    var h = head('جمله‌سازی', 'نخستین جمله', 'سرآغاز کتیبهٔ داریوش', 'home');
+    h += illu('images/darius.webp', 'داریوش بزرگ در بیستون');
+    h += '<div class="card task"><div class="goal"><p class="muted">این جمله را به خط میخی بساز:</p><div class="fa">' + S.fa + '</div></div>' +
       '<div class="slots' + (state === 'ok' ? ' ok' : state === 'bad' ? ' bad' : '') + '" data-act="undo">' + slotsHtml('sent') + '</div><p class="note">جداکنندهٔ 𐏐 خودش میان واژه‌ها می‌آید. از چپ به راست.</p>';
     if (B.solved) {
       h += '<div class="result"><b>✓ آفرین!</b> نخستین جملهٔ کتیبهٔ بیستون را ساختی:<p class="lat" style="font-size:1.1rem">adam Dārayavauš xšāyaθiya vazraka</p><button class="play small" data-play="audio/l-1.mp3">🔊 بشنو</button></div>';
-      h += '<div class="actions">' + (B.viaHelp ? '<button class="btn btn-gold" data-act="sretry">حالا خودت، از اول</button>' : nextBtn('sentence')) + '</div>';
+      h += '<div class="actions">' + (B.viaHelp ? '<button class="btn btn-coral" data-act="sretry">حالا خودت، از اول</button>' : nextBtn('sentence')) + '</div>';
     } else {
       h += '<div class="tiles">' + tilesHtml('sent') + '</div>';
       if (B.wrong >= 2 && !B.help) h += '<div class="actions"><button class="btn btn-line" data-act="help">💡 کمک گرفتن</button></div>';
@@ -254,67 +438,76 @@
   var I = { sel: null };
   function inscription() {
     var C = K.inscription, readN = Object.keys(P.lines).length;
-    var h = bar('گام ۴ · کتیبه‌خوانی', fn(readN) + ' از ' + fn(C.lines.length));
-    h += '<div class="photo-card"><img src="images/behistun.webp" alt="کتیبه و نگارهٔ بیستون"><p class="cap">کتیبه و نگارهٔ بیستون، کرمانشاه. میراث جهانی یونسکو.</p></div>';
-    h += '<div class="card intro"><h3>' + C.title + '</h3><p class="lat" style="font-size:.85rem;font-style:normal;color:var(--mut)">' + C.ref + '</p><p>' + C.about + '</p><p>👆 روی هر واژهٔ میخی بزن تا معنی و صدایش را ببینی؛ دکمهٔ 🔊 کل سطر را می‌خواند.</p></div>';
+    var h = head('کتیبه‌خوانی', fn(readN) + ' از ' + fn(C.lines.length), C.title, 'home');
+    h += illu('images/behistun.webp', 'کتیبه و نگارهٔ بیستون');
+    h += '<div class="text"><p class="muted">' + C.ref + '</p><p>' + C.about + '</p><p>👆 روی هر واژهٔ میخی بزن تا معنی و صدایش را ببینی؛ دکمهٔ 🔊 کل سطر را می‌خواند.</p></div>';
     h += '<div class="lines">' + C.lines.map(function (l, n) {
       var cu = l.w.map(function (k, j) { return (j ? '<span class="divider">' + DIV + '</span>' : '') + '<button class="wbtn' + (I.sel === n + ':' + j ? ' on' : '') + '" data-w="' + n + ':' + j + '">' + K.lex[k].g + '</button>'; }).join('');
       var gl = '';
       if (I.sel && I.sel.split(':')[0] == n) { var L = K.lex[l.w[+I.sel.split(':')[1]]]; gl = '<div class="gloss"><span class="cu">' + L.g + '</span> · <span class="lat">' + L.tr + '</span> = <b>' + L.fa + '</b>' + (L.today ? '<br>🌿 ' + L.today : '') + '</div>'; }
-      return '<div class="line' + (P.lines[n] ? ' read' : '') + '"><div class="num"><span>سطر ' + fn(n + 1) + (P.lines[n] ? ' · ✓ خوانده شد' : '') + '</span><button class="play small" data-line="' + n + '">🔊</button></div><div class="cuw">' + cu + '</div><div class="tr">' + l.w.map(function (k) { return K.lex[k].tr; }).join(' ') + '</div><div class="fa">' + l.fa + '</div>' + gl + '</div>';
+      return '<div class="qcard line c' + ((n % 6) + 1) + (P.lines[n] ? ' read' : '') + '"><div class="top"><span class="num">' + fn(n + 1) + '</span><span class="muted">' + (P.lines[n] ? '✓ خوانده شد' : 'سطر ' + fn(n + 1)) + '</span><button class="play small" data-line="' + n + '">🔊</button></div><div class="cuw">' + cu + '</div><div class="tr">' + l.w.map(function (k) { return K.lex[k].tr; }).join(' ') + '</div><div class="fa">' + l.fa + '</div>' + gl + '</div>';
     }).join('') + '</div>';
-    h += '<div class="card intro"><h3>🔎 نکته‌های خواندن</h3><p>• پسوند <span class="lat">‎-ānām‎</span> = «ـانِ» (جمع، وابستگی): xšāyaθiyānām = «شاهان».</p><p>• پسوند <span class="lat">‎-ahyā‎</span> = کسرهٔ اضافه: Vištāspahyā puça = «پسرِ ویشتاسپ».</p><p>• در برخی کتیبه‌های دیگر، «شاه» را با یک اندیشه‌نگار می‌نویسند: <span class="cu" style="font-size:1.6rem">𐏋</span></p></div>';
-    h += '<div class="sec">' + (P.done.inscription ? '<div class="card celebrate"><div class="big">🏛️</div><h3>درس ۱ تمام شد!</h3><p>تو نخستین بند کتیبهٔ بیستون را خواندی.</p></div><div style="height:10px"></div>' : '') + '<button class="btn btn-gold btn-block" data-act="ifinish">' + (P.done.inscription ? 'بازگشت به خانه' : 'خواندم ✓') + '</button></div>';
+    h += '<div class="card grammar"><h3>🔎 نکته‌های خواندن</h3><p>• پسوند <span class="lat">‎-ānām‎</span> = «ـانِ» (جمع، وابستگی): xšāyaθiyānām = «شاهان».</p><p>• پسوند <span class="lat">‎-ahyā‎</span> = کسرهٔ اضافه: Vištāspahyā puça = «پسرِ ویشتاسپ».</p><p>• در برخی کتیبه‌های دیگر، «شاه» را با یک اندیشه‌نگار می‌نویسند: <span class="cu" style="font-size:1.6rem">𐏋</span></p></div>';
+    h += '<div class="sec">' + (P.done.inscription ? '<div class="card celebrate"><div class="big">🏛️</div><h3>کتیبه‌خوانی تمام شد!</h3><p>تو نخستین بند کتیبهٔ بیستون را خواندی.</p></div><div style="height:10px"></div>' : '') + '<button class="btn btn-coral btn-block" data-act="ifinish">' + (P.done.inscription ? 'بازگشت به خانه' : 'خواندم ✓') + '</button></div>';
     render(h);
   }
 
   /* ---------- credits ---------- */
   function credits() {
-    render(bar('منبع عکس‌ها') + '<div class="card credits"><p style="margin-bottom:10px">همهٔ عکس‌ها از Wikimedia Commons با پروانهٔ آزاد هستند. قلم میخی: Noto Sans Old Persian (SIL OFL). قلم فارسی: Vazirmatn (SIL OFL). صداها با صدای مصنوعی فارسی و به‌صورت بازسازی تقریبی ساخته شده‌اند.</p><ul id="cl"><li>…</li></ul></div>');
-    fetch('data/credits.json').then(function (r) { return r.json(); }).then(function (cr) {
-      document.getElementById('cl').innerHTML = cr.map(function (c) { return '<li><b>' + esc(c.title) + '</b> — ' + esc(c.author || 'Unknown') + ' · <a href="' + esc(c.licenseUrl || c.source) + '" target="_blank" rel="noopener">' + esc(c.license) + '</a> · <a href="' + esc(c.source) + '" target="_blank" rel="noopener">source</a></li>'; }).join('');
-    }).catch(function () {});
+    render(head('دربارهٔ تصویرها', null, null, 'home') + '<div class="card credits"><p><b>تصویرها:</b> همهٔ تصویرهای این اپ نقاشی‌های تازه‌اند (به سبک کتاب‌های <span class="en">Dutch in 90 Days</span>) که برای Kisti ساخته شده‌اند؛ عکس واقعی نیستند و جزئیات لباس و بناها بازسازی هنری است.</p>' +
+      '<p style="margin-top:8px"><b>قلم‌ها (SIL Open Font License):</b></p><ul class="en" style="text-align:left"><li>Noto Sans Old Persian — The Noto Project Authors</li><li>Vazirmatn — Saber Rastikerdar</li><li>Fredoka — The Fredoka Project Authors</li><li>Alegreya — The Alegreya Project Authors</li></ul>' +
+      '<p style="margin-top:8px"><b>صداها:</b> با صدای مصنوعی فارسی و به‌صورت بازسازی تقریبی تلفظ پارسی باستان ساخته شده‌اند.</p><p style="margin-top:8px"><b>متن‌ها:</b> املای پارسی باستان بر پایهٔ <span class="en">Kent (1953)</span> و <span class="en">Schmitt (2009)</span>. ترتیب میخ‌ها در «مشق» یک قرارداد آموزشی است.</p></div>');
   }
 
   /* ---------- routing & events ---------- */
-  var routes = { home: home, alphabet: alphabet, quiz: quiz, words: function () { B = null; words(); }, sentence: function () { B = null; sentence(); }, inscription: inscription, credits: credits };
-  function route() {
-    var r = (location.hash || '#home').slice(1);
-    if (r === 'quiz' && !A.quiz) A.quiz = makeQuiz();
-    (routes[r] || home)(); window.scrollTo(0, 0);
-  }
+  function startMashq() { if (!M.res && !M.user.length && M.ti === 0) { var id = L1[M.si]; P.nb[id] = { tries: [], best: (P.nb[id] || {}).best || 0 }; save(); } mashq(); }
+  var routes = { home: home, lesson1: lesson1, learn: learn, mashq: startMashq, quiz: quiz, review: function () { R.open = {}; review(); }, notebook: notebook,
+    words: function () { B = null; words(); }, sentence: function () { B = null; sentence(); }, inscription: inscription, credits: credits };
+  function route() { var r = (location.hash || '#home').slice(1); (routes[r] || home)(); window.scrollTo(0, 0); }
   function go(r) { if (location.hash === '#' + r) route(); else location.hash = r; }
+  function firstUndoneWord() { for (var i = 0; i < K.words.length; i++) if (!P.words[K.words[i].id]) return i; return 0; }
   window.addEventListener('hashchange', route);
   app.addEventListener('click', function (e) {
-    var t = e.target.closest('button, [data-act]'); if (!t) return;
-    var r = t.getAttribute('data-go'), act = t.getAttribute('data-act');
-    if (r) { if (r === 'words') W.i = firstUndoneWord(); go(r); return; }
-    if (t.hasAttribute('data-soon')) { toast('این خط در نسخهٔ کامل می‌آید'); return; }
+    var t = e.target.closest('button, [data-act]'); if (!t || t.disabled) return;
+    var r = t.getAttribute('data-go'), act = t.getAttribute('data-act'), view = location.hash.slice(1);
+    if (r) { if (r === 'words') W.i = firstUndoneWord(); if (r === 'quiz') Q = null; go(r); return; }
+    if (t.hasAttribute('data-soon')) { toast('این بخش در نسخهٔ کامل می‌آید'); return; }
     if (t.hasAttribute('data-play')) { Audio_.play(t.getAttribute('data-play')); t.classList.remove('playing'); void t.offsetWidth; t.classList.add('playing'); return; }
-    if (t.hasAttribute('data-sign')) { A.sel = t.getAttribute('data-sign'); Audio_.play(SIG[A.sel].audio); var y = window.scrollY; alphabet(); window.scrollTo(0, Math.min(y, document.querySelector('.detail').offsetTop - 70)); return; }
+    if (t.hasAttribute('data-sign')) { A.sel = t.getAttribute('data-sign'); Audio_.play(SIG[A.sel].audio); learn(); window.scrollTo(0, 0); return; }
+    if (t.hasAttribute('data-rev')) { var rid = t.getAttribute('data-rev'); R.open[rid] = true; Audio_.play(SIG[rid].audio); review(); return; }
     if (t.hasAttribute('data-ans')) { answer(t); return; }
-    var view = location.hash.slice(1);
-    if (t.hasAttribute('data-tile')) { var k = +t.getAttribute('data-tile'); pickTile(k, view === 'words' ? 'word' : 'sent', view === 'words' ? words : sentence); return; }
+    if (t.hasAttribute('data-tile')) { pickTile(+t.getAttribute('data-tile'), view === 'words' ? 'word' : 'sent', view === 'words' ? words : sentence); return; }
     if (t.hasAttribute('data-w')) { var p = t.getAttribute('data-w'), n = +p.split(':')[0]; I.sel = I.sel === p ? null : p; Audio_.play(K.lex[K.inscription.lines[n].w[+p.split(':')[1]]].audio); var y2 = window.scrollY; inscription(); window.scrollTo(0, y2); return; }
     if (t.hasAttribute('data-line')) { var ln = +t.getAttribute('data-line'); Audio_.play(K.inscription.lines[ln].audio); if (!P.lines[ln]) { P.lines[ln] = true; save(); var y3 = window.scrollY; inscription(); window.scrollTo(0, y3); } return; }
+    var y = window.scrollY;
     switch (act) {
-      case 'quiz': A.quiz = makeQuiz(); go('quiz'); break;
+      case 'undo-w': M.user.pop(); mashq(); window.scrollTo(0, y); break;
+      case 'clear-w': M.user.length = 0; mashq(); window.scrollTo(0, y); break;
+      case 'check-w': mashqCheck(); window.scrollTo(0, y); break;
+      case 'retry-w': M.res = null; M.user = []; mashq(); window.scrollTo(0, y); break;
+      case 'model-w': M.res = null; M.user = []; M.showModel = true; mashq(); window.scrollTo(0, y); break;
+      case 'next-w': mashqNext(); break;
+      case 'qclear': Q.user.length = 0; quiz(); window.scrollTo(0, y); break;
+      case 'qcheck': { var q = Q.qs[Q.i]; Q.res = score(K.strokes[q.s.id], Q.user); if (Q.res.stars >= 2) Q.score++; quiz(); window.scrollTo(0, y); break; }
+      case 'qnext': Q.i++; Q.user = []; Q.res = null; quiz(); window.scrollTo(0, 0); break;
+      case 'quiz-again': Q = makeQuiz(); quiz(); break;
+      case 'rev-done': partDone('review'); go('lesson1'); break;
       case 'undo': if (B && !B.solved && B.picked.length) { B.picked.pop(); (view === 'words' ? words : sentence)(); } break;
       case 'help': B.help = true; B.viaHelp = true; B.picked = []; (view === 'words' ? words : sentence)(); break;
       case 'wretry': wordsInit(); B.kind = 'word'; words(); toast('حالا بدون کمک، از اول'); break;
       case 'wnext':
         if (W.i < K.words.length - 1) { W.i++; B = null; words(); window.scrollTo(0, 0); }
-        else { markDone('words'); render(bar('گام ۲ · واژه‌سازی') + '<div class="card celebrate"><div class="big">🏺</div><h3>چهار واژهٔ نخست را نوشتی!</h3><p class="lat">adam · Pārsa · pasā · imam</p></div><div class="sec">' + nextBtn('words') + '</div>'); }
+        else { markDone('words'); render(head('واژه‌سازی', 'تمام شد', null, 'home') + '<div class="card celebrate"><div class="big">🏺</div><h3>چهار واژهٔ نخست را نوشتی!</h3><p class="lat">adam · Pārsa · pasā · imam</p></div><div class="btns">' + nextBtn('words') + '</div>'); window.scrollTo(0, 0); }
         break;
       case 'sretry': B = newBuilder(K.sentence.words, K.sentence.words); B.kind = 'sent'; sentence(); toast('حالا بدون کمک، از اول'); break;
-      case 'ifinish': if (P.done.inscription) go('home'); else { markDone('inscription'); var y4 = window.scrollY; inscription(); window.scrollTo(0, y4 + 200); } break;
+      case 'ifinish': if (P.done.inscription) go('home'); else { markDone('inscription'); inscription(); window.scrollTo(0, y + 200); } break;
     }
   });
-  function firstUndoneWord() { for (var i = 0; i < K.words.length; i++) if (!P.words[K.words[i].id]) return i; return 0; }
   W.i = firstUndoneWord();
   route();
 
   /* splash: 3 seconds */
   var sp = document.getElementById('splash');
   setTimeout(function () { sp.classList.add('out'); sp.setAttribute('aria-hidden', 'true'); setTimeout(function () { sp.remove(); }, 700); }, 3000);
+  window.__kisti = { score: score, classify: classify, P: function () { return P; } };
 })();
