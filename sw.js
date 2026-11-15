@@ -1,6 +1,6 @@
 // Kisti service worker v4 · HTML/JSON network-first · css/js stale-while-revalidate · media cache-on-demand
-const V = 'kisti-v4', MEDIA = 'kisti-media-v3';
-const SHELL = ['./', 'index.html', 'css/styles.css?v=4', 'js/app.js?v=4', 'js/data.js?v=4', 'js/data-op.js?v=4', 'js/data-pa.js?v=4', 'js/data-av.js?v=4', 'js/install.js?v=4', 'manifest.webmanifest',
+const V = 'kisti-v5', MEDIA = 'kisti-media-v3';
+const SHELL = ['./', 'index.html', 'css/styles.css?v=5', 'js/app.js?v=5', 'js/data.js?v=5', 'js/data-op.js?v=5', 'js/data-pa.js?v=5', 'js/data-av.js?v=5', 'js/install.js?v=5', 'manifest.webmanifest',
   'fonts/Vazirmatn-Regular.woff2', 'fonts/Vazirmatn-Bold.woff2', 'fonts/Vazirmatn-Black.woff2', 'fonts/NotoSansOldPersian-Regular.woff2', 'fonts/NotoSansInscriptionalPahlavi-Regular.woff2', 'fonts/NotoSansAvestan-Regular.woff2', 'fonts/Fredoka-Bold.woff2', 'fonts/Alegreya-Italic.woff2',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'images/shir-o-khorshid.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
