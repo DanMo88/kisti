@@ -6,7 +6,7 @@ import edge_tts
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VOICE, RATE = "fa-IR-FaridNeural", "-30%"
 async def one(fname, text):
-    path = os.path.join(ROOT, fname); tmp = path + ".raw.mp3"
+    path = os.path.join(ROOT, fname); os.makedirs(os.path.dirname(path), exist_ok=True); tmp = path + ".raw.mp3"
     for attempt in range(4):
         try:
             await edge_tts.Communicate(text, VOICE, rate=RATE).save(tmp); break
@@ -18,5 +18,10 @@ async def one(fname, text):
 async def main():
     jobs = json.load(open(os.path.join(ROOT, "tools", "tts_jobs.json"), encoding="utf-8"))
     only = sys.argv[1:]
-    await asyncio.gather(*[one(f, t) for f, t in jobs.items() if not only or f in only])
+    sem = asyncio.Semaphore(6)
+    async def lim(f, t):
+        async with sem: await one(f, t)
+    todo = [(f, t) for f, t in jobs.items() if ((f in only) if only else not os.path.exists(os.path.join(ROOT, f)))]  #(os.path.join(ROOT, f))]
+    print(len(todo), 'to generate')
+    await asyncio.gather(*[lim(f, t) for f, t in todo])
 asyncio.run(main())
