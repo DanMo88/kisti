@@ -1,6 +1,6 @@
-// Kisti service worker · HTML/JSON network-first · css/js stale-while-revalidate · media cache-on-demand
-const V = 'kisti-v2', MEDIA = 'kisti-media-v2';
-const SHELL = ['./', 'index.html', 'css/styles.css?v=2', 'js/app.js?v=2', 'js/data.js?v=2', 'js/install.js?v=2', 'manifest.webmanifest',
+// Kisti service worker v3 · HTML/JSON network-first · css/js stale-while-revalidate · media cache-on-demand
+const V = 'kisti-v3', MEDIA = 'kisti-media-v2';
+const SHELL = ['./', 'index.html', 'css/styles.css?v=3', 'js/app.js?v=3', 'js/data.js?v=3', 'js/install.js?v=3', 'manifest.webmanifest',
   'fonts/Vazirmatn-Regular.woff2', 'fonts/Vazirmatn-Bold.woff2', 'fonts/Vazirmatn-Black.woff2', 'fonts/NotoSansOldPersian-Regular.woff2', 'fonts/Fredoka-Bold.woff2', 'fonts/Alegreya-Italic.woff2',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'images/shir-o-khorshid.svg'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
