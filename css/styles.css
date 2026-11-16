@@ -142,9 +142,6 @@ img { max-width: 100%; display: block; }
 .signhero .vals { display: flex; justify-content: center; gap: 14px; align-items: baseline; line-height: 1.3; }
 .signhero .lat { font-size: clamp(1.25rem, 3.4dvh, 1.7rem); color: var(--blue); font-weight: 700; }
 .signhero .fa { font-size: clamp(1.2rem, 3.2dvh, 1.6rem); font-weight: 900; color: var(--coral); }
-.play { display: inline-flex; align-items: center; gap: 6px; padding: clamp(4px, 1dvh, 8px) 18px; border-radius: 99px; background: var(--blue); color: #fff; font-weight: 700; flex: none; }
-.play.small { padding: 3px 12px; font-size: .85rem; margin: 0; }
-.playing { animation: pulse .5s ease; }
 @keyframes pulse { 50% { transform: scale(1.07); } }
 .seg { display: flex; gap: 4px; background: #F6EEDD; border-radius: 99px; padding: 3px; width: 100%; flex: none; }
 .seg button { flex: 1; font-size: clamp(.72rem, 1.8dvh, .82rem); font-weight: 700; color: var(--mut); border-radius: 99px; padding: 3px 2px; white-space: nowrap; }
@@ -156,7 +153,7 @@ img { max-width: 100%; display: block; }
 .sg .cu { font-size: clamp(1.4rem, 3.6dvh, 1.8rem); line-height: 1.2; }
 .sg .lat { font-size: .78rem; color: var(--blue); }
 .sg.sel { border-color: var(--coral); background: #FFF3EC; }
-.sg.seen .lat::after { content: " ✓"; color: var(--ok); font-style: normal; }
+.sg.seen .prs::after { content: " ✓"; color: var(--ok); }
 
 /* mashq: the pad takes all remaining space and stays square */
 .mq-top { flex: none; display: flex; align-items: center; gap: 10px; line-height: 1.5; }
@@ -338,3 +335,40 @@ img { max-width: 100%; display: block; }
 .helpbox .pa, .helpbox .av { font-size: 1.4rem; color: var(--brown); }
 .goal .green { font-size: .95rem; }
 .tiles.many { gap: 6px; } .tiles.many .tile { height: clamp(44px, 7dvh, 62px); min-width: 50px; }
+
+/* ---------- v6: Persian-letter readings («خوانش») instead of sound ---------- */
+.pr { font-family: var(--fa); font-style: normal; font-weight: 900; color: var(--green-d, #2E7D4F); }
+.prbig { font-family: var(--fa); font-weight: 900; color: var(--green-d, #2E7D4F); font-size: clamp(1.5rem, 4.6dvh, 2.3rem); line-height: 1.25; display: flex; align-items: baseline; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.prbig small { font-size: .78rem; font-weight: 700; color: var(--mut); }
+.signhero .lat { font-size: clamp(.95rem, 2.4dvh, 1.2rem); }
+.signhero .fa.sm { font-size: clamp(.82rem, 2dvh, 1rem); font-weight: 700; color: var(--sub); }
+.signhero .vals { gap: 10px; flex-wrap: wrap; }
+.link.gl { flex: none; font-size: .8rem; }
+.prs { font-family: var(--fa); font-weight: 700; color: var(--green-d, #2E7D4F); font-size: .82rem; line-height: 1.3; white-space: nowrap; }
+.sg .prs { font-size: clamp(.78rem, 2dvh, .95rem); }
+.sg.hz .prs { font-size: .72rem; }
+.mq-top .pr { font-size: clamp(1.05rem, 2.8dvh, 1.3rem); }
+.mq-top .lat { color: var(--blue); font-size: .85rem; }
+.oprs { display: flex; flex-direction: column; line-height: 1.25; }
+.oprs .pr { font-size: clamp(1.05rem, 2.8dvh, 1.3rem); }
+.oprs .lat { font-size: .74rem; color: var(--blue); }
+.qhead .pr { font-size: 1.12em; } .qhead .lat { color: var(--blue); font-size: .8em; }
+.task .wr { text-align: center; line-height: 1.4; } .task .wr .pr { font-size: clamp(1.1rem, 3dvh, 1.4rem); } .task .wr .lat { color: var(--blue); font-size: .9rem; }
+.slot.word small.prs, .tile.word small.prs { font-family: var(--fa); font-style: normal; font-size: .74rem; color: var(--green-d, #2E7D4F); }
+.result .prbig { font-size: clamp(1.1rem, 3dvh, 1.45rem); margin: 0; } .result .lat { color: var(--blue); font-size: .85rem; margin: 0; }
+.line .prline { text-align: center; font-family: var(--fa); font-weight: 900; color: var(--green-d, #2E7D4F); font-size: clamp(1.05rem, 2.9dvh, 1.35rem); line-height: 1.5; }
+.line .tr { font-size: clamp(.82rem, 2.1dvh, .98rem); }
+.gloss .pr { color: var(--green-d, #2E7D4F); }
+.nrd { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; justify-content: center; }
+.nrow .pr { color: #CFEFD9; font-size: clamp(.9rem, 2.3dvh, 1.05rem); }
+.lbtns { display: flex; gap: 10px; margin-inline-start: auto; }
+.gtab { width: 100%; border-collapse: collapse; font-size: clamp(.74rem, 1.9dvh, .86rem); line-height: 1.45; }
+.gtab td { padding: 3px 4px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.gtab td.lat { color: var(--blue); white-space: nowrap; }
+.gtab td.prg { font-weight: 900; color: var(--green-d, #2E7D4F); white-space: nowrap; font-size: 1.05em; }
+.signs5, .signs5.n6, .signs5.n7, .signs5.n8, .signs5.n9 { grid-template-columns: repeat(var(--cols, 5), minmax(0, 1fr)); }
+.signs5.n6 { --cols: 6; } .signs5.n7, .signs5.n8 { --cols: 4; }
+.sg { min-width: 0; padding: 0 2px; }
+.signs5.n6 .sg .prs, .signs5.n9 .sg .prs { font-size: .7rem; letter-spacing: -.2px; }
+.sg .prs { max-width: 100%; white-space: normal; text-align: center; overflow-wrap: anywhere; line-height: 1.2; }
+.mq-top b.pr, .nb-row b.pr { color: var(--green-d, #2E7D4F); }

@@ -1,5 +1,6 @@
-/* Kisti v4 — three ancient Iranian scripts (Old Persian cuneiform · Inscriptional Pahlavi · Avestan).
+/* Kisti v6 — three ancient Iranian scripts (Old Persian cuneiform · Inscriptional Pahlavi · Avestan).
    Each script: alphabet lessons (learn · mashq · quiz · review) → word building → sentence building → reading real texts.
+   No sound at all: every sign, word, sentence and line shows its reading («خوانش») in Persian letters.
    Every screen fits one phone viewport (no vertical scrolling). Vanilla JS, hash routing, localStorage (kisti-progress-v1, migrated in place). */
 (function () {
   'use strict';
@@ -60,30 +61,6 @@
     return Math.round(100 * got / tot);
   }
 
-  /* ---------- audio: decoded lazily per screen ---------- */
-  var Audio_ = (function () {
-    var raw = {}, buf = {}, els = {}, ctx = null, cur = null, asked = {};
-    function decode(u) { if (buf[u] || !raw[u] || !ctx) return; var ab = raw[u].slice(0); ctx.decodeAudioData(ab, function (b) { buf[u] = b; }, function () {}); }
-    function preload(list) {
-      (list || []).forEach(function (u) {
-        if (!u || asked[u]) return; asked[u] = 1;
-        fetch(u).then(function (r) { return r.ok ? r.arrayBuffer() : null; }).then(function (ab) { if (ab) { raw[u] = ab; if (ctx) decode(u); } }).catch(function () {});
-      });
-    }
-    function unlock() {
-      if (!ctx) { var C = window.AudioContext || window.webkitAudioContext; if (!C) return; ctx = new C(); Object.keys(raw).forEach(decode); }
-      if (ctx.state === 'suspended') ctx.resume();
-    }
-    ['pointerdown', 'touchstart', 'keydown'].forEach(function (ev) { window.addEventListener(ev, unlock, { capture: true, passive: true }); });
-    function stop() { if (cur) { try { cur.stop ? cur.stop() : (cur.pause(), cur.currentTime = 0); } catch (e) {} cur = null; } }
-    function play(u) {
-      if (!u) return; unlock(); stop();
-      if (ctx && buf[u]) { var s = ctx.createBufferSource(); s.buffer = buf[u]; s.connect(ctx.destination); s.start(0); cur = s; return; }
-      var a = els[u] || (els[u] = new Audio(u)); try { a.currentTime = 0; } catch (e) {} var pr = a.play(); if (pr && pr.catch) pr.catch(function () {}); cur = a; preload([u]);
-    }
-    return { play: play, preload: preload };
-  })();
-
   function toast(msg) { var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('on'); }, 2200); }
   var RULE = '<div class="rule"><i></i><i></i><i></i><i></i></div>';
   function head(title, pill, sub, back) {
@@ -103,6 +80,9 @@
       '<circle cx="22" cy="22" r="14" fill="none" stroke="' + (on ? '#FFF2C9' : '#fff') + '" stroke-width="1.5"/><path d="M22 11l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L22 27.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1z" fill="' + (on ? '#fff' : '#E2D6BE') + '"/></svg>';
   }
   function first(s) { return String(s).split(' / ')[0]; }
+  function prq(x) { return '<b class="pr">«' + x + '»</b>'; }
+  function guideBtn(sid, cls) { return '<button class="link small ' + (cls || '') + '" data-act="guide" data-sid="' + sid + '">📖 راهنمای خوانش</button>'; }
+  function guideSheet(sid) { sheet('<h3>📖 راهنمای خوانش · ' + SS[sid].short + '</h3>' + K.guide[sid]); }
   function last(s) { return String(s).split(' / ').pop(); }
 
   /* ---------- wedge geometry (Old Persian; unit square, y down) ---------- */
@@ -258,7 +238,7 @@
     var hd = '<header class="page-h"><div class="row"><img class="mini-logo" src="icons/icon-192.png" alt="Kisti"><h1 class="brand" dir="ltr" style="text-align:right">Kisti</h1><img class="flag" src="images/shir-o-khorshid.svg" alt="پرچم شیر و خورشید"></div>' + RULE +
       '<p class="subt">کیستی · خواندن خط‌های باستانی ایران</p></header>';
     var b = illu('images/persepolis.webp', 'تخت جمشید در روزگار هخامنشیان', 'grow tallok') +
-      '<p class="lead">سه خط کهن ایران: <b>میخی</b> هخامنشیان، <b>پهلوی</b> ساسانیان و <b>دین‌دبیره</b>ی اوستا. از الفبا تا خواندن کتیبه‌های واقعی؛ هر نشانه را می‌بینی، می‌شنوی و <b>مشق</b> می‌کنی.</p>' +
+      '<p class="lead">سه خط کهن ایران: <b>میخی</b> هخامنشیان، <b>پهلوی</b> ساسانیان و <b>دین‌دبیره</b>ی اوستا. از الفبا تا خواندن کتیبه‌های واقعی؛ هر نشانه را می‌بینی، <b>خوانشش</b> را با حرف فارسی می‌خوانی و <b>مشق</b> می‌کنی.</p>' +
       '<div class="chips">' + ORDER.map(function (x) { return '<button class="chip' + (x === sid ? ' on' : '') + '" data-go="s/' + x + '"><span class="g ' + SS[x].cls + '">' + K.sample[x] + '</span><small>' + SS[x].short + ' · ٪' + fn(scriptPct(x)) + '</small></button>'; }).join('') + '</div>' +
       '<div class="btnrow"><button class="btn btn-coral" data-go="s/' + sid + '">' + (started ? 'ادامه: ' + S.short : 'شروع: خط میخی') + ' ←</button><button class="btn btn-line" data-install>📲 نصب اپ</button></div>' +
       '<p class="credit">ساخته شده توسط <b dir="ltr" lang="en">Daniel Mozafari</b> · <button class="link" data-go="credits">منابع و تصویرها</button></p>';
@@ -295,11 +275,11 @@
     else if (!sentsDone(sid)) go = '<button class="btn btn-coral btn-block" data-go="sent/' + sid + '">جمله‌سازی ←</button>';
     else go = '<button class="btn btn-coral btn-block" data-go="read/' + sid + '">' + K.readName[sid] + ' ←</button>';
     render(page(head(S.name, null, S.latin + ' · ' + (S.dir === 'ltr' ? 'از چپ به راست' : 'از راست به چپ'), 'scripts'),
-      illu(S.img, S.name, 'grow opt') + '<div class="lbl"><b>الفبا · ' + fn(S.lessons.length) + ' درس</b><button class="link small" data-act="about" data-sid="' + sid + '">دربارهٔ این خط</button></div>' + grid + '<div class="lbl"><b>از ' + S.unit + ' تا متن</b></div>' + rows, go));
+      illu(S.img, S.name, 'grow opt') + '<div class="lbl"><b>الفبا · ' + fn(S.lessons.length) + ' درس</b><span class="lbtns">' + guideBtn(sid) + '<button class="link small" data-act="about" data-sid="' + sid + '">دربارهٔ این خط</button></span></div>' + grid + '<div class="lbl"><b>از ' + S.unit + ' تا متن</b></div>' + rows, go));
   }
 
   /* ---------- lesson overview ---------- */
-  var PARTS = { learn: ['یادگیری', 'هر نشانه را ببین، بشنو و رازش را بخوان'], mashq: ['مشق', 'هر نشانه پنج بار؛ الگو کم‌کم محو می‌شود'], quiz: ['آزمونک', '۱۰ پرسش؛ با ۷ درست می‌گذری'], review: ['مرور', 'پنج نشانه از درس‌های پیش'] };
+  var PARTS = { learn: ['یادگیری', 'هر نشانه را ببین، خوانشش را بخوان و رازش را یاد بگیر'], mashq: ['مشق', 'هر نشانه پنج بار؛ الگو کم‌کم محو می‌شود'], quiz: ['آزمونک', '۱۰ پرسش؛ با ۷ درست می‌گذری'], review: ['مرور', 'پنج نشانه از درس‌های پیش'] };
   function lessonView() {
     var sid = CUR.sid, n = CUR.n, S = SS[sid], l = S.lessons[n - 1], parts = partsOf(sid, n), L = lp(sid, n), c = lessonCount(sid, n);
     var np = parts.filter(function (p) { return !L[p]; })[0];
@@ -327,14 +307,13 @@
     var tabs = hz ? [['hint', '📜 هزوارش'], ['about', 'دربارهٔ خط']] : [['hint', '💡 راز'], ['text', 'توضیح'], ['about', 'دربارهٔ خط']];
     if (!tabs.some(function (t) { return t[0] === A.tab; })) A.tab = 'hint';
     var panel = A.tab === 'hint' ? (hz ? s.text : '<b>راز به‌یادسپاری:</b> ' + s.hint) : A.tab === 'text' ? s.text : S.about;
-    var vals = hz ? '<span class="lat">' + s.tr + '</span><span class="arrow">←</span><span class="lat green">' + s.read + '</span><span class="fa">' + s.fa + '</span>' : '<span class="lat">' + s.tr + '</span><span class="fa">' + s.fa + '</span>';
-    var b = '<div class="card signhero"><div class="big ' + S.cls + (hz ? ' hz' : '') + '">' + s.g + '</div><div class="vals">' + vals + '</div><button class="play" data-play="' + s.audio + '">🔊 بشنو</button>' +
+    var vals = '<div class="prbig"><small>خوانش</small>«' + s.pr + '»</div><div class="vals">' + (hz ? '<span class="lat">' + s.tr + '</span><span class="arrow">←</span><span class="lat green">' + s.read + '</span><span class="fa">' + s.fa + '</span>' : '<span class="lat">' + s.tr + '</span>' + (s.fa !== s.pr ? '<span class="fa sm">' + s.fa + '</span>' : '')) + '</div>';
+    var b = '<div class="card signhero"><div class="big ' + S.cls + (hz ? ' hz' : '') + '">' + s.g + '</div>' + vals + guideBtn(sid, 'gl') +
       '<div class="seg">' + tabs.map(function (t) { return '<button class="' + (t[0] === A.tab ? 'on' : '') + '" data-ltab="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div><div class="hint">' + panel + '</div></div>';
-    b += '<div class="' + gridCls(ids.length) + '">' + ids.map(function (id) { var x = S.SIG[id]; return '<button class="sg' + (id === A.sel ? ' sel' : '') + (ps.seen.indexOf(id) >= 0 ? ' seen' : '') + (x.kind === 'hz' ? ' hz' : '') + '" data-sign="' + id + '"><span class="' + S.cls + '">' + x.g + '</span><span class="lat">' + (x.kind === 'hz' ? x.read : first(x.tr)) + '</span></button>'; }).join('') + '</div>';
+    b += '<div class="' + gridCls(ids.length) + '">' + ids.map(function (id) { var x = S.SIG[id]; return '<button class="sg' + (id === A.sel ? ' sel' : '') + (ps.seen.indexOf(id) >= 0 ? ' seen' : '') + (x.kind === 'hz' ? ' hz' : '') + '" data-sign="' + id + '"><span class="' + S.cls + '">' + x.g + '</span><span class="prs">' + x.pr + '</span></button>'; }).join('') + '</div>';
     var i = ids.indexOf(A.sel), nextPart = l.mashq ? 'mashq' : 'quiz';
     var foot = i < ids.length - 1 ? '<button class="btn btn-coral btn-block" data-sign="' + ids[i + 1] + '">' + S.unit + 'ِ بعدی ←</button>' : '<button class="btn btn-coral btn-block" data-go="' + nextPart + '/' + sid + '/' + CUR.n + '">برو به ' + PARTS[nextPart][0] + ' ←</button>';
     render(page(lhead('learn', fn(ids.filter(function (id) { return ps.seen.indexOf(id) >= 0; }).length) + ' از ' + fn(ids.length)), b, foot));
-    Audio_.preload(ids.map(function (id) { return S.SIG[id].audio; }));
   }
 
   /* ---------- 2. mashq: five tries per sign with a fading model ---------- */
@@ -353,7 +332,7 @@
   function mashq() {
     var sid = CUR.sid, S = SS[sid], id = M.list[M.si], s = S.SIG[id], m = s.m, mode = M.showModel && modeFor(M.ti) === 'none' ? 'faint' : modeFor(M.ti);
     var nb = PS(sid).nb[id] = PS(sid).nb[id] || { tries: [] }, pen = isPen(sid);
-    var b = '<div class="mq-top"><span class="' + S.cls + '">' + s.g + '</span><div class="t"><b><span class="lat">' + first(s.tr) + '</span> · ' + last(s.fa) + '</b><div class="muted">سَرمشق: ' + nStrokes(sid, m) + ' · تلاش ' + fn(M.ti + 1) + ' از ۵</div></div><button class="play small" data-play="' + s.audio + '">🔊</button></div>';
+    var b = '<div class="mq-top"><span class="' + S.cls + '">' + s.g + '</span><div class="t">' + prq(s.pr) + ' <span class="lat">' + first(s.tr) + '</span><div class="muted">سَرمشق: ' + nStrokes(sid, m) + ' · تلاش ' + fn(M.ti + 1) + ' از ۵</div></div></div>';
     b += '<div class="tries">' + [0, 1, 2, 3, 4].map(function (t) { var r = nb.tries[t]; return '<span class="' + (t === M.ti ? 'cur' : r && r.s > 0 ? 'ok' : '') + '">' + (r && t !== M.ti ? stars(r.s) : fn(t + 1)) + '</span>'; }).join('') + '</div>';
     b += padBox(pad(sid, 'pad', m, mode, M.user), '<span class="pill ' + (mode === 'none' ? 'gold' : 'blue') + ' mode-tag">' + MODE_TXT[mode] + '</span>');
     if (!M.res) b += pen ? '<div class="legend"><span><b>با انگشت</b> روی خط‌ها بکش</span><span>از <b>نقطهٔ شماره‌دار</b> شروع کن</span><span>هر خط = یک کشش</span></div>'
@@ -392,11 +371,16 @@
 
   /* ---------- 3. quiz: 4 shape→sound, 4 sound→shape, 2 write from memory (5+5 when nothing can be written) ---------- */
   var Q = null;
-  function optLabel(o) { return o.kind === 'hz' ? '<span class="lat">' + o.read + '</span> · ' + o.fa : '<span class="lat">' + first(o.tr) + '</span> · ' + last(o.fa); }
+  function optLabel(o) { return '<span class="oprs"><b class="pr">' + o.pr + '</b><span class="lat">' + (o.kind === 'hz' ? o.read : first(o.tr)) + '</span></span>'; }
   function makeQuiz(sid, n) {
     var S = SS[sid], pool = S.lessons[n - 1].signs, wm = pool.filter(function (id) { return S.SIG[id].m; }), nw = wm.length ? 2 : 0, nt = (10 - nw) / 2, qs = [];
     var others = S.signs.filter(function (s) { return pool.indexOf(s.id) < 0 && s.kind === S.SIG[pool[0]].kind; }).map(function (s) { return s.id; });
-    function opts(id) { var d = shuffle(pool.filter(function (x) { return x !== id; })); if (d.length < 3) d = d.concat(shuffle(others)); return shuffle([id].concat(d.slice(0, 3))); }
+    // distractors must read differently from the answer and from each other (several Avestan vowels share a Persian reading)
+    function opts(id) {
+      var seen = {}; seen[S.SIG[id].pr] = 1; var d = [];
+      shuffle(pool.filter(function (x) { return x !== id; })).concat(shuffle(others)).forEach(function (x) { var r = S.SIG[x].pr; if (d.length < 3 && !seen[r]) { seen[r] = 1; d.push(x); } });
+      return shuffle([id].concat(d));
+    }
     cyc(shuffle(pool), nt).forEach(function (id) { qs.push({ type: 't', s: S.SIG[id], opts: opts(id) }); });
     cyc(shuffle(pool), nt).forEach(function (id) { qs.push({ type: 'g', s: S.SIG[id], opts: opts(id) }); });
     qs = shuffle(qs); cyc(shuffle(wm), nw).forEach(function (id, i) { qs.splice(3 + i * 4, 0, { type: 'w', s: S.SIG[id] }); });
@@ -414,10 +398,10 @@
     }
     var q = Q.qs[Q.i], c = 'c' + ((Q.i % 6) + 1), foot = null, hz = q.s.kind === 'hz';
     var b = '<div class="qprog">' + Q.qs.map(function (_, k) { return '<i class="' + (k < Q.i ? 'on' : k === Q.i ? 'cur' : '') + '"></i>'; }).join('') + '</div><div class="qcard qmain ' + c + '">';
-    if (q.type === 't') b += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span>' + (hz ? 'این هزوارش چه خوانده می‌شود؟' : 'این ' + S.unit + ' چه صدایی دارد؟') + '</div><div class="qglyph ' + S.cls + (hz ? ' hz' : '') + '">' + q.s.g + '</div><div class="opts">' + q.opts.map(function (id, k) { return '<button class="opt" data-ans="' + id + '"><span class="L">' + LET[k] + '</span><span>' + optLabel(S.SIG[id]) + '</span></button>'; }).join('') + '</div>';
-    else if (q.type === 'g') b += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span><span>' + (hz ? 'هزوارشِ «' + q.s.fa + '» (<span class="lat">' + q.s.read + '</span>) کدام است؟' : S.unit + 'ِ «' + last(q.s.fa) + '» (<span class="lat">' + first(q.s.tr) + '</span>) کدام است؟') + '</span><button class="play small" data-play="' + q.s.audio + '">🔊</button></div><div class="opts big' + (hz ? ' hz' : '') + '">' + q.opts.map(function (id, k) { return '<button class="opt" data-ans="' + id + '"><span class="L">' + LET[k] + '</span><span class="' + S.cls + '">' + S.SIG[id].g + '</span></button>'; }).join('') + '</div>';
+    if (q.type === 't') b += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span>' + (hz ? 'این هزوارش چه خوانده می‌شود؟' : 'خوانشِ این ' + S.unit + ' کدام است؟') + '</div><div class="qglyph ' + S.cls + (hz ? ' hz' : '') + '">' + q.s.g + '</div><div class="opts">' + q.opts.map(function (id, k) { return '<button class="opt" data-ans="' + id + '"><span class="L">' + LET[k] + '</span><span>' + optLabel(S.SIG[id]) + '</span></button>'; }).join('') + '</div>';
+    else if (q.type === 'g') b += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span><span>' + (hz ? 'کدام هزوارش ' + prq(q.s.pr) + ' خوانده می‌شود؟' : 'کدام ' + S.unit + ' ' + prq(q.s.pr) + ' خوانده می‌شود؟') + ' <span class="lat">' + (hz ? q.s.read : first(q.s.tr)) + '</span></span></div><div class="opts big' + (hz ? ' hz' : '') + '">' + q.opts.map(function (id, k) { return '<button class="opt" data-ans="' + id + '"><span class="L">' + LET[k] + '</span><span class="' + S.cls + '">' + S.SIG[id].g + '</span></button>'; }).join('') + '</div>';
     else {
-      b += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span><span>بدون الگو بنویس: «' + last(q.s.fa) + '» (<span class="lat">' + first(q.s.tr) + '</span>)</span><button class="play small" data-play="' + q.s.audio + '">🔊</button></div>' + padBox(pad(sid, 'qpad', q.s.m, Q.res ? 'faint' : 'none', Q.user));
+      b += '<div class="qhead"><span class="num">' + fn(Q.i + 1) + '</span><span>بدون الگو بنویس: ' + prq(q.s.pr) + ' <span class="lat">' + first(q.s.tr) + '</span></span></div>' + padBox(pad(sid, 'qpad', q.s.m, Q.res ? 'faint' : 'none', Q.user));
       foot = !Q.res ? '<div class="tools"><button class="btn btn-line" data-act="qclear">پاک کردن</button><button class="btn btn-coral" data-act="qcheck">بررسی ✓</button></div>'
         : feedbackHtml(Q.res, [Q.res.stars >= 2 ? 'درست است!' : 'الگوی درست، کم‌رنگ نشان داده شد.']) + '<div class="tools"><button class="btn btn-coral" data-act="qnext">ادامه ←</button></div>';
     }
@@ -427,7 +411,7 @@
   }
   function answer(btn) {
     var q = Q.qs[Q.i], id = btn.getAttribute('data-ans');
-    if (id === q.s.id) { btn.classList.add('ok'); if (!q.tried) Q.score++; Audio_.play(q.s.audio); app.querySelectorAll('.opt').forEach(function (x) { x.disabled = true; }); setTimeout(function () { Q.i++; quiz(); }, 800); }
+    if (id === q.s.id) { btn.classList.add('ok'); if (!q.tried) Q.score++; app.querySelectorAll('.opt').forEach(function (x) { x.disabled = true; }); setTimeout(function () { Q.i++; quiz(); }, 800); }
     else { q.tried = true; btn.classList.add('bad'); btn.disabled = true; }
   }
 
@@ -440,11 +424,10 @@
       if (!pool.length) pool = S.lessons[0].signs;
       R = { key: sid + n, ids: shuffle(pool).slice(0, 5), open: {} };
     }
-    var b = illu(S.img, S.name, 'grow opt') + '<div class="mascot-row"><img class="mascot" src="images/mascot.webp" alt=""><div class="bubble">' + (n > 1 ? 'یادت هست؟ این‌ها از درس‌های پیش‌اند. پیش از زدن، صدایش را در دل بگو.' : 'این نخستین درس است؛ همین نشانه‌ها را مرور کن.') + ' روی هر کارت بزن.</div></div>';
-    b += '<div class="' + gridCls(R.ids.length) + '">' + R.ids.map(function (id) { var x = S.SIG[id], o = R.open[id]; return '<button class="sg' + (o ? ' seen' : '') + (x.kind === 'hz' ? ' hz' : '') + '" data-rev="' + id + '"><span class="' + S.cls + '">' + x.g + '</span><span class="lat">' + (o ? (x.kind === 'hz' ? x.read : first(x.tr)) : '؟') + '</span></button>'; }).join('') + '</div>';
+    var b = illu(S.img, S.name, 'grow opt') + '<div class="mascot-row"><img class="mascot" src="images/mascot.webp" alt=""><div class="bubble">' + (n > 1 ? 'یادت هست؟ این‌ها از درس‌های پیش‌اند. پیش از زدن، خوانشش را در دل بگو.' : 'این نخستین درس است؛ همین نشانه‌ها را مرور کن.') + ' روی هر کارت بزن.</div></div>';
+    b += '<div class="' + gridCls(R.ids.length) + '">' + R.ids.map(function (id) { var x = S.SIG[id], o = R.open[id]; return '<button class="sg' + (o ? ' seen' : '') + (x.kind === 'hz' ? ' hz' : '') + '" data-rev="' + id + '"><span class="' + S.cls + '">' + x.g + '</span><span class="prs">' + (o ? x.pr : '؟') + '</span></button>'; }).join('') + '</div>';
     var all = R.ids.every(function (id) { return R.open[id]; });
     render(page(lhead('review', S.short), b, '<button class="btn btn-coral btn-block" data-act="rev-done"' + (all ? '' : ' disabled') + '>' + (lp(sid, n).review ? '✓ مرور شد · بازگشت به درس' : 'مرور شد ✓') + '</button>'));
-    Audio_.preload(R.ids.map(function (id) { return S.SIG[id].audio; }));
   }
 
   /* ---------- notebook: all three scripts ---------- */
@@ -458,7 +441,7 @@
     if (!ids.length) b += illu('images/scribe.webp', 'دبیر', 'grow opt') + '<div class="card celebrate"><div class="big">✍</div><h3>هنوز مشقی در خط ' + S.short + ' ننوشته‌ای</h3><p>در هر درس، بخش «مشق» را باز کن.</p></div>';
     else b += '<div class="nb">' + ids.slice(NB.pg * per, NB.pg * per + per).map(function (id) {
       var s = S.SIG[id], e = nb[id], tr = (e.tries || []).filter(Boolean);
-      return '<div class="card nb-row"><span class="g ' + S.cls + '">' + s.g + '</span><div class="t"><b><span class="lat">' + first(s.tr) + '</span> · ' + last(s.fa) + '</b><div class="muted">' + fn(tr.length) + ' مشق · ' + stars(e.best || 0) + '</div></div>' +
+      return '<div class="card nb-row"><span class="g ' + S.cls + '">' + s.g + '</span><div class="t">' + prq(s.pr) + ' <span class="lat">' + first(s.tr) + '</span><div class="muted">' + fn(tr.length) + ' مشق · ' + stars(e.best || 0) + '</div></div>' +
         '<div class="nb-thumbs">' + [0, 1, 2, 3, 4].map(function (k) { var t = tr[k]; return t ? thumb(sid, t, s.m) : '<svg viewBox="0 0 1 1" class="empty"></svg>'; }).join('') + '</div></div>';
     }).join('') + '</div>';
     var foot = pages > 1 ? '<div class="pager"><button class="btn btn-line" data-act="nbpg" data-n="' + (NB.pg - 1) + '"' + (NB.pg ? '' : ' disabled') + '>→</button><span class="pg">' + fn(NB.pg + 1) + ' از ' + fn(pages) + '</span><button class="btn btn-coral" data-act="nbpg" data-n="' + (NB.pg + 1) + '"' + (NB.pg < pages - 1 ? '' : ' disabled') + '>←</button></div>' : null;
@@ -475,7 +458,7 @@
       var v = B.picked[j] != null ? tileVal(B.picked[j]) : null;
       if (B.kind === 'sent' && j > 0 && S.div.trim()) out.push('<span class="divider ' + S.cls + '">' + S.div + '</span>');
       if (B.kind === 'word') out.push('<span class="slot' + (v ? '' : ' empty') + '">' + (v ? '<span class="' + S.cls + '">' + S.SIG[v].g + '</span>' : '·') + '</span>');
-      else out.push('<span class="slot word' + (v ? '' : ' empty') + '">' + (v ? '<span class="' + S.cls + '">' + S.lex[v].g + '</span><small>' + S.lex[v].tr + '</small>' : '·') + '</span>');
+      else out.push('<span class="slot word' + (v ? '' : ' empty') + '">' + (v ? '<span class="' + S.cls + '">' + S.lex[v].g + '</span><small class="prs">' + S.lex[v].pr + '</small>' : '·') + '</span>');
     }
     return out.join('');
   }
@@ -483,7 +466,7 @@
     var S = SS[sid], nextNeed = B.help ? B.answer[B.picked.length] : null, hinted = false;
     return B.tiles.map(function (t) {
       var used = B.picked.indexOf(t.k) >= 0, hint = !used && !hinted && nextNeed === t.v; if (hint) hinted = true;
-      var inner = B.kind === 'word' ? '<span class="' + S.cls + '">' + S.SIG[t.v].g + '</span>' : '<span class="' + S.cls + '">' + S.lex[t.v].g + '</span><small>' + S.lex[t.v].tr + '</small>';
+      var inner = B.kind === 'word' ? '<span class="' + S.cls + '">' + S.SIG[t.v].g + '</span>' : '<span class="' + S.cls + '">' + S.lex[t.v].g + '</span><small class="prs">' + S.lex[t.v].pr + '</small>';
       return '<button class="tile' + (B.kind === 'word' ? '' : ' word') + (used ? ' used' : '') + (hint ? ' hint' : '') + '" data-tile="' + t.k + '">' + inner + '</button>';
     }).join('');
   }
@@ -491,7 +474,6 @@
     if (B.solved) return;
     B.picked.push(k);
     var v = tileVal(k), S = SS[sid];
-    Audio_.play(B.kind === 'word' ? S.SIG[v].audio : S.lex[v].audio);
     if (B.picked.length === B.answer.length) {
       var got = B.picked.map(tileVal);
       if (got.join() === B.answer.join()) { B.solved = true; rerender('ok'); return; }
@@ -510,11 +492,11 @@
     if (!B || B.kind !== 'word') wordsInit();
     var wd = S.words[W.i], w = S.lex[wd.id], foot = null;
     var b = illu(K.alt[sid] || S.img, S.name, 'grow opt');
-    b += '<div class="card task"><div class="goal"><p class="muted">این واژه را به خط ' + S.short + ' بنویس:</p><div class="fa">' + w.fa + '</div><div class="lat">' + w.tr + (w.read && w.read !== w.tr ? ' <span class="green">→ ' + w.read + '</span>' : '') + '</div></div>' +
+    b += '<div class="card task"><div class="goal"><p class="muted">این واژه را به خط ' + S.short + ' بنویس:</p><div class="fa">' + w.fa + '</div><div class="wr">' + prq(w.pr) + ' <span class="lat">' + w.tr + (w.read && w.read !== w.tr ? ' → ' + w.read : '') + '</span></div></div>' +
       '<div class="slots' + dirCls(sid) + (state === 'ok' ? ' ok' : state === 'bad' ? ' bad' : '') + '" data-act="undo">' + slotsHtml(sid) + '</div>';
     if (B.solved) {
-      b += '<div class="result"><b>✓ درست است!</b> <span class="' + S.cls + ' rg">' + w.g + '</span> = <span class="lat">' + w.tr + '</span><p>' + wd.note + '</p><p class="today">🌿 <b>در فارسی امروز:</b> ' + w.today + '</p></div>';
-      foot = '<div class="tools"><button class="btn btn-line" data-play="' + w.audio + '">🔊 بشنو</button>' + (B.viaHelp ? '<button class="btn btn-coral" data-act="wretry">حالا خودت، از اول</button>' : '<button class="btn btn-coral" data-act="wnext">' + (W.i < S.words.length - 1 ? 'واژهٔ بعدی ←' : 'پایان واژه‌سازی ←') + '</button>') + '</div>';
+      b += '<div class="result"><b>✓ درست است!</b> <span class="' + S.cls + ' rg">' + w.g + '</span> = ' + prq(w.pr) + ' <span class="lat">' + w.tr + '</span><p>' + wd.note + '</p><p class="today">🌿 <b>در فارسی امروز:</b> ' + w.today + '</p></div>';
+      foot = '<div class="tools">' + (B.viaHelp ? '<button class="btn btn-coral" data-act="wretry">حالا خودت، از اول</button>' : '<button class="btn btn-coral" data-act="wnext">' + (W.i < S.words.length - 1 ? 'واژهٔ بعدی ←' : 'پایان واژه‌سازی ←') + '</button>') + '</div>';
     } else {
       if (!B.help) b += '<p class="note">' + (S.dir === 'ltr' ? 'از چپ به راست' : 'از راست به چپ') + ' بچین. برای پاک کردن آخرین ' + S.unit + '، روی خانه‌ها بزن.</p>';
       b += '<div class="tiles' + dirCls(sid) + (B.tiles.length > 7 ? ' many' : '') + '">' + tilesHtml(sid) + '</div>';
@@ -523,12 +505,11 @@
     }
     b += '</div>';
     render(page(head('واژه‌سازی', fn(W.i + 1) + ' از ' + fn(S.words.length), S.name, 's/' + sid), b, foot));
-    if (state === 'ok') { Audio_.play(w.audio); if (!B.viaHelp) { PS(sid).words[wd.id] = true; save(); } }
-    Audio_.preload(w.s.map(function (id) { return S.SIG[id].audio; }).concat([w.audio]));
+    if (state === 'ok' && !B.viaHelp) { PS(sid).words[wd.id] = true; save(); }
   }
   function wordsEnd() {
     var sid = W.sid, S = SS[sid];
-    render(page(head('واژه‌سازی', 'تمام شد', S.name, 's/' + sid), illu(S.img, S.name, 'grow opt') + '<div class="card celebrate"><div class="big">🏺</div><h3>' + fn(S.words.length) + ' واژه را نوشتی!</h3><p class="lat">' + S.words.slice(0, 4).map(function (w) { return S.lex[w.id].tr; }).join(' · ') + ' …</p></div>',
+    render(page(head('واژه‌سازی', 'تمام شد', S.name, 's/' + sid), illu(S.img, S.name, 'grow opt') + '<div class="card celebrate"><div class="big">🏺</div><h3>' + fn(S.words.length) + ' واژه را نوشتی!</h3><p class="pr">' + S.words.slice(0, 4).map(function (w) { return S.lex[w.id].pr; }).join(' · ') + ' …</p></div>',
       '<button class="btn btn-coral btn-block" data-go="sent/' + sid + '">جمله‌سازی ←</button>'));
   }
   function sheet(html) {
@@ -545,17 +526,16 @@
       '<div class="slots sent' + dirCls(sid) + (state === 'ok' ? ' ok' : state === 'bad' ? ' bad' : '') + '" data-act="undo">' + slotsHtml(sid) + '</div>';
     var gram = '<button class="btn btn-line" data-act="gram">📜 دستور ساده</button>', foot;
     if (B.solved) {
-      b += '<div class="result"><b>✓ آفرین!</b> جمله‌ای از <span class="en">' + X.ref + '</span> را ساختی:<p class="lat big">' + X.w.map(function (k) { return S.lex[k].tr; }).join(' ') + '</p></div>';
-      foot = '<div class="tools">' + gram + '<button class="btn btn-line" data-play="' + X.audio + '">🔊</button>' + (B.viaHelp ? '<button class="btn btn-coral" data-act="sretry">حالا خودت</button>' : '<button class="btn btn-coral" data-act="snext">' + (SN.i < S.sentences.length - 1 ? 'جملهٔ بعدی ←' : 'پایان ←') + '</button>') + '</div>';
+      b += '<div class="result"><b>✓ آفرین!</b> جمله‌ای از <span class="en">' + X.ref + '</span> را ساختی:<p class="prbig">«' + X.pr + '»</p><p class="lat">' + X.w.map(function (k) { return S.lex[k].tr; }).join(' ') + '</p></div>';
+      foot = '<div class="tools">' + gram + (B.viaHelp ? '<button class="btn btn-coral" data-act="sretry">حالا خودت</button>' : '<button class="btn btn-coral" data-act="snext">' + (SN.i < S.sentences.length - 1 ? 'جملهٔ بعدی ←' : 'پایان ←') + '</button>') + '</div>';
     } else {
       b += '<p class="note">' + (S.div.trim() ? 'جداکنندهٔ <span class="' + S.cls + '">' + S.div + '</span> خودش میان واژه‌ها می‌آید. ' : '') + (S.dir === 'ltr' ? 'از چپ به راست.' : 'از راست به چپ.') + '</p><div class="tiles' + dirCls(sid) + '">' + tilesHtml(sid) + '</div>';
-      if (B.help) b += '<div class="helpbox">ترتیب درست: <span class="lat">' + X.w.map(function (k) { return S.lex[k].tr; }).join(' · ') + '</span> · واژهٔ بعدی قاب طلایی دارد.</div>';
+      if (B.help) b += '<div class="helpbox">ترتیب درست: <b class="pr">' + X.w.map(function (k) { return S.lex[k].pr; }).join(' · ') + '</b> · واژهٔ بعدی قاب طلایی دارد.</div>';
       foot = '<div class="tools">' + gram + (B.wrong >= 2 && !B.help ? '<button class="btn btn-line" data-act="help">💡 کمک گرفتن</button>' : '') + '</div>';
     }
     b += '</div>';
     render(page(head('جمله‌سازی', fn(SN.i + 1) + ' از ' + fn(S.sentences.length), S.name, 's/' + sid), b, foot));
-    if (state === 'ok') { Audio_.play(X.audio); if (!B.viaHelp) { PS(sid).sents[SN.i] = true; save(); } }
-    Audio_.preload(X.w.map(function (k) { return S.lex[k].audio; }).concat([X.audio]));
+    if (state === 'ok' && !B.viaHelp) { PS(sid).sents[SN.i] = true; save(); }
   }
   function sentEnd() {
     var sid = SN.sid, S = SS[sid];
@@ -576,28 +556,27 @@
   var I = { sid: '', tid: '', sel: null, pg: 0 };
   function textView() {
     var sid = I.sid, S = SS[sid], C = S.TX[I.tid], ps = PS(sid), rd = ps.lines[C.id] = ps.lines[C.id] || {}, N = C.lines.length, pg = I.pg, b, foot;
-    var readN = Object.keys(rd).length;
     var dots = '<span class="dots">' + [0].concat(C.lines.map(function (_, n) { return n + 1; }), [N + 1]).map(function (k) { return '<i class="' + (k === pg ? 'cur' : k > 0 && k <= N && rd[k - 1] ? 'on' : '') + '"></i>'; }).join('') + '</span>';
     var prev = '<button class="btn btn-line" data-act="ipg" data-n="' + (pg - 1) + '"' + (pg ? '' : ' disabled') + '>→ قبلی</button>';
     if (pg === 0) {
-      b = illu(C.img, C.title, 'grow opt') + '<div class="card intro"><p class="muted en">' + C.ref + '</p><p>' + C.about + '</p><p class="muted">👆 روی هر واژه بزن تا معنی و صدایش را ببینی؛ دکمهٔ 🔊 کل سطر را می‌خواند.</p></div>';
+      b = illu(C.img, C.title, 'grow opt') + '<div class="card intro"><p class="muted en">' + C.ref + '</p><p>' + C.about + '</p><p class="muted">👆 زیرِ هر سطر خوانشِ فارسی‌اش آمده؛ روی هر واژه بزن تا معنی و خوانشش را ببینی. ' + guideBtn(sid) + '</p></div>';
       foot = '<div class="pager">' + prev + dots + '<button class="btn btn-coral" data-act="ipg" data-n="1">شروع ←</button></div>';
     } else if (pg <= N) {
       var n = pg - 1, l = C.lines[n];
+      if (!rd[n]) { rd[n] = true; save(); }
       var ws = l.w.map(function (k, j) { return (j && S.div.trim() ? '<span class="divider ' + S.cls + '">' + S.div + '</span>' : '') + '<button class="wbtn' + (I.sel === n + ':' + j ? ' on' : '') + '" data-w="' + n + ':' + j + '">' + S.lex[k].g + '</button>'; }).join('');
       var gl = '<div class="gloss empty">👆 روی یک واژه بزن</div>';
-      if (I.sel && +I.sel.split(':')[0] === n) { var L = S.lex[l.w[+I.sel.split(':')[1]]]; gl = '<div class="gloss"><span class="' + S.cls + '">' + L.g + '</span> · <span class="lat">' + L.tr + (L.read && L.read !== L.tr ? ' → ' + L.read : '') + '</span> = <b>' + L.fa + '</b>' + (L.today && L.today !== '—' ? '<br>🌿 ' + L.today : '') + '</div>'; }
-      b = '<div class="qcard line c' + ((n % 6) + 1) + (rd[n] ? ' read' : '') + '" data-swipe="i"><div class="top"><span class="num">' + fn(n + 1) + '</span><span class="muted">' + (rd[n] ? '✓ خوانده شد' : 'سطر ' + fn(n + 1) + ' از ' + fn(N)) + '</span><button class="play small" data-line="' + n + '">🔊 بخوان</button></div>' +
-        '<div class="cuw' + dirCls(sid) + ' w-' + sid + '">' + ws + '</div><div class="tr">' + l.w.map(function (k) { return S.lex[k].tr; }).join(' ') + '</div>' + (sid === 'pa' ? '<div class="tr rd">' + l.w.map(function (k) { return S.lex[k].read; }).join(' ') + '</div>' : '') + '<div class="fa">' + l.fa + '</div>' + gl + '</div>';
+      if (I.sel && +I.sel.split(':')[0] === n) { var L = S.lex[l.w[+I.sel.split(':')[1]]]; gl = '<div class="gloss"><span class="' + S.cls + '">' + L.g + '</span> · ' + prq(L.pr) + ' · <span class="lat">' + L.tr + (L.read && L.read !== L.tr ? ' → ' + L.read : '') + '</span> = <b>' + L.fa + '</b>' + (L.today && L.today !== '—' ? '<br>🌿 ' + L.today : '') + '</div>'; }
+      b = '<div class="qcard line c' + ((n % 6) + 1) + (rd[n] ? ' read' : '') + '" data-swipe="i"><div class="top"><span class="num">' + fn(n + 1) + '</span><span class="muted">سطر ' + fn(n + 1) + ' از ' + fn(N) + '</span></div>' +
+        '<div class="cuw' + dirCls(sid) + ' w-' + sid + '">' + ws + '</div><div class="prline">' + l.pr + '</div><div class="tr">' + l.w.map(function (k) { return S.lex[k].tr; }).join(' ') + '</div>' + (sid === 'pa' ? '<div class="tr rd">' + l.w.map(function (k) { return S.lex[k].read; }).join(' ') + '</div>' : '') + '<div class="fa">' + l.fa + '</div>' + gl + '</div>';
       foot = '<div class="pager">' + prev + dots + '<button class="btn btn-coral" data-act="ipg" data-n="' + (pg + 1) + '">بعدی ←</button></div>';
-      Audio_.preload(l.w.map(function (k) { return S.lex[k].audio; }).concat([l.audio]));
     } else {
       var tips = K.tips[sid] || [];
       b = '<div class="card grammar"><h3>🔎 نکته‌های خواندن</h3>' + tips.map(function (t) { return '<p>• ' + t + '</p>'; }).join('') + '</div>' +
         (ps.done[C.id] ? '<div class="card celebrate"><div class="big">🏛️</div><h3>' + C.title + ' را خواندی!</h3><p>' + fn(N) + ' سطر · ' + fn(textsDone(sid)) + ' از ' + fn(S.texts.length) + ' متن</p></div>' : illu(C.img, C.title, 'grow opt'));
       foot = '<div class="pager">' + prev + dots + '<button class="btn btn-coral" data-act="ifinish">' + (ps.done[C.id] ? 'متن‌ها' : 'خواندم ✓') + '</button></div>';
     }
-    render(page(head(C.title, fn(readN) + ' از ' + fn(N), null, 'read/' + sid), b, foot));
+    render(page(head(C.title, fn(Object.keys(rd).length) + ' از ' + fn(N), null, 'read/' + sid), b, foot));
   }
 
   /* ---------- name in three scripts (approximate, playful) ---------- */
@@ -641,13 +620,40 @@
       return out.map(function (x) { return S.SIG[x].g; }).join('');
     }).filter(Boolean).join('\u2E31');
   }
+  // how an ancient reader would read the spelling back (same conventions as the data readings)
+  var GS = {}; ORDER.forEach(function (sid) { GS[sid] = {}; SS[sid].signs.forEach(function (x) { if (x.kind !== 'hz') GS[sid][x.g] = x; }); });
+  var HAR = { a: 'َ', i: 'ِ', u: 'ُ' }, LONG = { a: 'ا', i: 'ی', u: 'و' }, INIT = { a: 'اَ', i: 'اِ', u: 'اُ' };
+  function bare(x) { return first(x.pr).replace(/[\u064B-\u0652]/g, ''); }
+  function readOP(gl) {
+    return gl.split('𐏐').map(function (w) {
+      var xs = Array.from(w).map(function (g) { return GS.op[g]; }).filter(Boolean), out = '', pv = true;
+      xs.forEach(function (x, k) {
+        if (/^[aiu]$/.test(x.id)) { out += pv ? INIT[x.id] : LONG[x.id]; pv = true; return; }
+        var v = x.id.slice(-1), nx = xs[k + 1], b = bare(x);
+        out += b + (nx && /^[aiu]$/.test(nx.id) ? '' : !nx && v === 'a' ? (b === 'ه' ? 'َ' : 'َه') : HAR[v] || ''); pv = false;
+      });
+      return out;
+    }).join(' ');
+  }
+  var AVV = { a: ['َ', 'اَ', 'ئَ'], aa: ['ا', 'آ', 'ئا'], ii: ['ی', 'ای', 'ئی'], uu: ['و', 'او', 'ئو'] };
+  function readAV(gl) {
+    return gl.split('\u2E31').map(function (w) {
+      var xs = Array.from(w).map(function (g) { return GS.av[g]; }).filter(Boolean), out = '';
+      xs.forEach(function (x, k) {
+        var V = AVV[x.id]; if (!V) { out += x.pr; return; }
+        var pv = k === 0 ? null : AVV[xs[k - 1].id] ? 'v' : 'c';
+        out += !pv ? V[1] : pv === 'v' ? V[2] : (k === xs.length - 1 && x.id === 'a' ? 'َه' : V[0]);
+      });
+      return out;
+    }).join(' ');
+  }
   function nameOut(raw) {
     var s = normName(raw);
     if (!s) return '<small>نامت این‌جا به سه خط نوشته می‌شود</small>';
     var o = nameOP(s), p = namePA(s), a = nameAV(s);
     if (!o && !p && !a) return '<small>فقط حرف‌های فارسی را بنویس</small>';
-    return [['op', o, 'میخی · از چپ به راست'], ['pa', p, 'پهلوی · بی‌واکه، مثل فارسی'], ['av', a, 'اوستایی · با واکه؛ «a» میان دو هم‌خوان از ماست']].map(function (x) {
-      return '<div class="nrow"><span class="' + SS[x[0]].cls + '">' + (x[1] || '—') + '</span><small>' + x[2] + '</small></div>'; }).join('');
+    return [['op', o, o ? readOP(o) : '', 'میخی · هر هم‌خوان «اَ» دارد'], ['pa', p, p ? s : '', 'پهلوی · واکهٔ کوتاه نوشته نمی‌شود'], ['av', a, a ? readAV(a) : '', 'اوستایی · «اَ»ی میانِ هم‌خوان‌ها از ماست']].map(function (x) {
+      return '<div class="nrow"><span class="' + SS[x[0]].cls + '">' + (x[1] || '—') + '</span><span class="nrd">' + (x[2] ? '<b class="pr">«' + x[2] + '»</b>' : '') + '<small>' + x[3] + '</small></span></div>'; }).join('');
   }
   function nameTab() {
     var b = '<div class="card name-card"><p class="muted">نامت را به فارسی بنویس تا ببینی دبیران کهن چطور آن را می‌نوشتند. <b>تقریبی و برای سرگرمی است</b>؛ برای نام‌های امروزی قاعدهٔ یکتایی نیست.</p>' +
@@ -714,16 +720,15 @@
     if (t.hasAttribute('data-locked')) { toast('اول درس ' + fn(+t.getAttribute('data-locked')) + ' را تمام کن'); return; }
     if (t.hasAttribute('data-lockmsg')) { toast('🔒 ' + t.getAttribute('data-lockmsg') + ' باز می‌شود'); return; }
     if (r) { var p = r.split('/'); if (p[0] === 'quiz') Q = null; if (p[0] === 'text') I.sid = ''; if (p[0] === 'review') R.key = ''; if (p[0] === 'learn') A.key = ''; go(r); return; }
-    if (t.hasAttribute('data-play')) { Audio_.play(t.getAttribute('data-play')); t.classList.remove('playing'); void t.offsetWidth; t.classList.add('playing'); return; }
     if (t.hasAttribute('data-ltab')) { A.tab = t.getAttribute('data-ltab'); learn(); return; }
-    if (t.hasAttribute('data-sign')) { A.sel = t.getAttribute('data-sign'); A.tab = 'hint'; Audio_.play(SS[CUR.sid].SIG[A.sel].audio); learn(); return; }
-    if (t.hasAttribute('data-rev')) { var rid = t.getAttribute('data-rev'); R.open[rid] = true; Audio_.play(SS[CUR.sid].SIG[rid].audio); review(); return; }
+    if (t.hasAttribute('data-sign')) { A.sel = t.getAttribute('data-sign'); A.tab = 'hint'; learn(); return; }
+    if (t.hasAttribute('data-rev')) { var rid = t.getAttribute('data-rev'); R.open[rid] = true; review(); return; }
     if (t.hasAttribute('data-ans')) { answer(t); return; }
     if (t.hasAttribute('data-nb')) { NB.sid = t.getAttribute('data-nb'); NB.pg = 0; notebook(); return; }
     if (t.hasAttribute('data-tile')) { var isW = B.kind === 'word'; pickTile(+t.getAttribute('data-tile'), isW ? words : sentence, isW ? W.sid : SN.sid); return; }
-    if (t.hasAttribute('data-w')) { var pw = t.getAttribute('data-w'), ln = +pw.split(':')[0], S = SS[I.sid]; I.sel = I.sel === pw ? null : pw; Audio_.play(S.lex[S.TX[I.tid].lines[ln].w[+pw.split(':')[1]]].audio); textView(); return; }
-    if (t.hasAttribute('data-line')) { var li = +t.getAttribute('data-line'), C = SS[I.sid].TX[I.tid], rd = PS(I.sid).lines[C.id]; Audio_.play(C.lines[li].audio); if (!rd[li]) { rd[li] = true; save(); textView(); } return; }
+    if (t.hasAttribute('data-w')) { var pw = t.getAttribute('data-w'); I.sel = I.sel === pw ? null : pw; textView(); return; }
     switch (act) {
+      case 'guide': guideSheet(t.getAttribute('data-sid')); break;
       case 'about': { var as = t.getAttribute('data-sid'); sheet('<h3>' + SS[as].name + '</h3><p>' + SS[as].about + '</p>' + (K.caveat[as] ? '<p class="muted">' + K.caveat[as] + '</p>' : '')); break; }
       case 'undo-w': M.user.pop(); mashq(); break;
       case 'clear-w': M.user.length = 0; mashq(); break;
@@ -756,5 +761,5 @@
   setTimeout(function () { sp.classList.add('out'); sp.setAttribute('aria-hidden', 'true'); setTimeout(function () { sp.remove(); }, 700); }, 3000);
   window.__kisti = { P: function () { return P; }, save: save, go: go, route: route, score: score, penScore: penScore, classify: classify, makeQuiz: makeQuiz, mashqNext: mashqNext,
     M: function () { return M; }, Q: function (q) { if (q !== undefined) Q = q; return Q; }, B: function () { return B; }, W: W, SN: SN, I: I, NB: NB, CR: CR, R: function () { return R; }, A: A,
-    views: { mashq: mashq, quiz: quiz, words: words, sentence: sentence, textView: textView, wordsEnd: wordsEnd, sentEnd: sentEnd, notebook: notebook, credits: credits, learn: learn, review: review }, nameOut: nameOut };
+    views: { mashq: mashq, quiz: quiz, words: words, sentence: sentence, textView: textView, wordsEnd: wordsEnd, sentEnd: sentEnd, notebook: notebook, credits: credits, learn: learn, review: review }, nameOut: nameOut, readOP: readOP, readAV: readAV, guideSheet: guideSheet };
 })();

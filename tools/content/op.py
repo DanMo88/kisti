@@ -9,7 +9,7 @@ CP = {'a': 0x103A0, 'i': 0x103A1, 'u': 0x103A2, 'ka': 0x103A3, 'ku': 0x103A4, 'g
       'div': 0x103D0, 'n1': 0x103D1, 'n2': 0x103D2, 'n10': 0x103D3, 'n20': 0x103D4, 'n100': 0x103D5}
 ID = {'θa': 'tha', 'ša': 'sha', 'ça': 'thra'}   # ascii ids
 
-# id, tr, fa (sound in Persian letters), say (TTS), hint, text
+# id, tr, fa (sound in Persian letters), say (legacy spelling, unused; readings come from tools/reading.py), hint, text
 SIGNS = [
  # lesson 1
  ('a', 'a / ā', 'اَ / آ', 'آ', 'یک سقف روی سه ستون، مثل ایوانِ تخت جمشید. سه ستون = «آ»، بزرگ‌ترین و نخستین نشانه.',
@@ -140,7 +140,7 @@ LEX = {
  'xshayarsha': ('xa-ša-ya-a-ra-ša-a', 'Xšayāršā', 'خشایارشا', 'خشیارشا', 'خشایارشا'),
  'vashna': ('va-ša-na-a', 'vašnā', 'به خواستِ', 'وَشنا', 'به خواستِ'),
  'imam': ('i-ma-ma', 'imam', 'این (را)', 'ایمَم', 'این'),
- 'duvarthim': ('du-va-ra-θa-i-ma', 'duvarthim', 'درگاه، دروازه', 'دووَرثیم', 'در، دروازه'),
+ 'duvarthim': ('du-va-ra-θa-i-ma', 'duvarθim', 'درگاه، دروازه', 'دووَرثیم', 'در، دروازه'),
  'visadahyum': ('vi-i-sa-da-ha-ya-u-ma', 'visadahyum', 'همهٔ سرزمین‌ها', 'ویسَدَهیوم', '«ویس» (همه) + «ده»'),
  'akunavam': ('a-ku-u-na-va-ma', 'akunavam', 'ساختم، کردم', 'اَکونَوَم', 'کردن'),
  'parsa': ('pa-a-ra-sa', 'Pārsa', 'پارسی، پارس', 'پارسَه', 'پارس، فارس'),
